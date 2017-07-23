@@ -1,0 +1,1 @@
+   10REM **** Flush sound channel 3 - Stops the broken-up start-up Beep!   20SOUND &13,0,0,0   21:   22REM **** Set Page to &1400 ready for the Menu program   30PAGE=&1400   31:   32REM **** Run BOOT1   40CHAIN"BOOT1"
