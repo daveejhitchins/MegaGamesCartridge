@@ -480,7 +480,6 @@ def convert_files(files, decomp_addrs, data_address, header_file, details, rom_f
     
     # Discard the address of the first file.
     address = file_addresses.pop(0)
-    print rom_file
     
     first_block = True
     file_details = []
@@ -612,6 +611,8 @@ def convert_files(files, decomp_addrs, data_address, header_file, details, rom_f
         sys.exit(1)
     
     os.remove(temp_file)
+    
+    print "Created", rom_file
 
 def write_end_marker(tf):
 
@@ -659,7 +660,7 @@ if __name__ == "__main__":
         }
     
     files = ["BOOT1", "FASTD", "MENU", "SUTILS", "SCODE"]
-    decomp_addrs = [0x1400, 0xe00, 0x1400, 0xe00, 0x1900]
+    decomp_addrs = [0x1400, 0xe00, 0x1400, "x", 0x1900]
     rom_file = "mgcmenu.rom"
     
     header_template = open("asm/romfs-template.oph").read()

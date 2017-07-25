@@ -20,8 +20,3 @@ cp temp/MENU build/MENU
 
 rm transfer.ssd temp.uef
 rm -r temp
-
-python -c '
-open("build/BOOT1.inf", "w").write("$.BOOT 1400 8023 %x" % len(open("build/BOOT1").read()))
-open("build/MENU.inf", "w").write("$.MENU 1400 8023 %x" % len(open("build/MENU").read()))
-'

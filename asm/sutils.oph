@@ -103,9 +103,13 @@ start_transfer:
         jmp transfer_loop
 
 exit:
-    lda #141        ; Select ROMFS.
-    jsr $fff4
-    rts    
+    ldx #<exiting
+    ldy #>exiting
+    jsr print
+    
+    ldx #<BASIC
+    ldy #>BASIC
+    jmp OSCLI
 
 print:
     stx print_low
@@ -168,6 +172,11 @@ transferring:
 ADFS: .byte "ADFS", 13
 DISC: .byte "DISC", 13
 TAPE: .byte "TAPE", 13
+
+exiting:
+.byte "Exiting to ", 255
+
+BASIC: .byte "BASIC", 13
 
 transfer:
 
