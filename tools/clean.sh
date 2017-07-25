@@ -13,7 +13,7 @@ if [ -e asm ] && [ -e build ] && [ -e tools ] && [ -e rom_tools ]; then
         rm mgcmenu.rom
     fi
 
-    for name in "BOOT1" "MENU" "SUTILS" "SCODE"; do
+    for name in "SUTILS" "SCODE"; do
         if [ -e build/$name ]; then
             rm build/$name
         fi
