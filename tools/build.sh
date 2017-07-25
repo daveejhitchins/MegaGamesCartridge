@@ -6,6 +6,13 @@ if [ -n $1 ] && [ "$1" = '-b' ]; then
     tools/regenerate_basic_files.sh
 fi
 
+for name in "BOOT1" "FASTD" "MENU"; do
+    if [ ! -e build/$name ]; then
+        echo "Ensure that ready-to-use BOOT1, FASTD and MENU files are placed in build."
+        exit 1
+    fi
+done
+
 # Create .inf files in case the files are missing those.
 # Also, rename the BOOT1 file as BOOT when it gets added to the UEF file.
 python -c '
