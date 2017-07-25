@@ -2,9 +2,9 @@
 
 set -e
 
-tools/prepare_sutils.py build/ROMLOAD build/SECWIPE build/SECPROG build/VUROM
-ophis -o build/scode asm/sutils.oph
+tools/prepare_sutils.py rom_tools/ROMLOAD rom_tools/SECWIPE rom_tools/SECPROG rom_tools/VUROM
+ophis -o build/SCODE asm/sutils.oph
 python -c '
-open("build/sutils.inf", "w").write("$.SUTILS e00 8023 %x" % len(open("build/sutils").read()))
-open("build/scode.inf", "w").write("$.SCODE 1900 1900 %x" % len(open("build/scode").read()))
+open("build/SUTILS.inf", "w").write("$.SUTILS e00 8023 %x" % len(open("build/SUTILS").read()))
+open("build/SCODE.inf", "w").write("$.SCODE 1900 1900 %x" % len(open("build/SCODE").read()))
 '
