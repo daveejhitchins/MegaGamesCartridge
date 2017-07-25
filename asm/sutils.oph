@@ -1,0 +1,175 @@
+.org $1900
+
+.alias OSBYTE $fff4
+.alias OSFILE $ffdd
+.alias OSWRCH $ffee
+.alias OSNEWL $ffe7
+.alias OSCLI  $fff7
+
+.alias print_low $70
+.alias print_high $71
+.alias transfer_low $72
+.alias transfer_high $73
+.alias transfer_next_low $74
+.alias transfer_next_high $75
+
+basic_reloader:
+
+; We can't put BASIC code at the start because this file will be decompressed
+; directly into memory at an address that might not be the same as PAGE.
+;.byte $d, 0, 10, $f, "*RUN SUTILS", $d, $ff
+
+main:
+
+lda #22
+jsr $ffee
+lda #6
+jsr $ffee
+
+lda #15                     ; Flush the input buffer.
+ldx #1
+jsr OSBYTE
+
+ldx #<welcome
+ldy #>welcome
+jsr print
+
+input_loop:
+
+    lda #129                ; Check for a key press with long timeout.
+    ldx #$ff
+    ldy #$7f
+    jsr OSBYTE
+    bcs check_key_fail      ; C=1 indicates timeout or Escape
+
+    stx echo                ; Store the ASCII code for later.
+    jsr check_key_code      ; Check the key code.
+
+    bcc start_transfer      ; If recognised then start the transfer.
+    bcs input_loop          ; Otherwise loop again.
+
+    check_key_fail:
+    cpy #$1b                ; Check if Escape was pressed and exit if so.
+    beq exit
+    bne input_loop          ; Otherwise loop again.
+
+start_transfer:
+
+    ldx #<echo
+    ldy #>echo
+    jsr print               ; Echo the user's choice.
+
+    ldx #<transferring
+    ldy #>transferring
+    jsr print
+
+    lda #<transfer
+    sta transfer_low
+    lda #>transfer
+    sta transfer_high
+
+    transfer_loop:
+
+        jsr OSNEWL
+
+        ldy #0
+        lda (transfer_low),y    ; Check the first byte.
+        cmp #0
+        beq exit                ; Exit if null.
+
+        tax
+        iny
+        lda (transfer_low),y    ; Print the file name by using the address in
+        tay                     ; the file block.
+        jsr print
+
+        ldy #14
+        lda (transfer_low),y
+        sta transfer_next_low   ; next item (low)
+        iny 
+        lda (transfer_low),y
+        sta transfer_next_high  ; next item (high)
+
+        save:
+        lda #0                  ; save file
+        ldx transfer_low        ; X=file block address (low)
+        ldy transfer_high       ; Y=file block address (high)
+        jsr OSFILE
+
+        lda transfer_next_low   ; Use the address of the next item.
+        sta transfer_low
+        lda transfer_next_high
+        sta transfer_high
+        jmp transfer_loop
+
+exit:
+    rts    
+
+print:
+    stx print_low
+    sty print_high
+    ldy #0
+    print_loop:
+        lda (print_low),y
+        cmp #255
+        beq print_exit
+        jsr OSWRCH
+        iny
+        jmp print_loop
+
+    print_exit:
+    rts
+
+check_key_code:
+
+    cpx #65
+    bne not_A
+    ldx #<ADFS
+    ldy #>ADFS
+    jmp call_oscli
+
+    not_A:
+    cpx #68
+    bne not_D
+    ldx #<DISC
+    ldy #>DISC
+    jmp call_oscli
+
+    not_D:
+    cpx #84
+    bne not_T
+    ldx #<TAPE
+    ldy #>TAPE
+    jmp call_oscli
+
+    not_T:
+    sec
+    rts
+
+call_oscli:
+    jsr OSCLI
+    clc
+    rts
+
+welcome:
+.byte 17,0,17,129, "MGC to DFS/ADFS/TAPE transfer program"
+.byte 17,1,17,128, 13,10, "To TAPE, DFS or ADFS (T/D/A) ", 255
+
+echo:
+.byte 0
+crlf:
+.byte 13, 10, 255
+
+transferring:
+.byte "Transferring ", 255
+
+ADFS: .byte "ADFS", 13
+DISC: .byte "DISC", 13
+TAPE: .byte "TAPE", 13
+
+transfer:
+
+; This should be followed by OSFILE blocks and data for each of the files to
+; bundle with this program.
+
+.include "sutils-extra.oph"
