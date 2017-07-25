@@ -6,9 +6,13 @@ if [ -n $1 ] && [ "$1" = '-b' ]; then
     tools/regenerate_basic_files.sh
 fi
 
+if [ ! -e build ]; then
+    mkdir build
+fi
+
 for name in "BOOT1" "FASTD" "MENU"; do
     if [ ! -e build/$name ]; then
-        echo "Ensure that ready-to-use BOOT1, FASTD and MENU files are placed in build."
+        echo "Ensure that ready-to-use BOOT1, FASTD and MENU files are placed in the build directory."
         exit 1
     fi
 done
