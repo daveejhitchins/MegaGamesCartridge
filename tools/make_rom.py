@@ -651,10 +651,10 @@ if __name__ == "__main__":
     indices = []
     
     details = {
-        "title": '.byte 0',
-        "version string": '.byte "", 0',
+        "title": '.byte "Mega Games Cartridge", 0',
+        "version string": '.byte "1.3", 0',
         "version": ".byte 1",
-        "copyright": '.byte "(C)", 0',
+        "copyright": '.byte "(C) Retro Hardware", 0',
         "rom name": '.byte "MGC", 13',
         }
     
