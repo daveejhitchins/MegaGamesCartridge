@@ -6,11 +6,11 @@ tools/prepare_boot.py
 tools/prepare_menu.py
 
 UEFtrans.py temp.uef new Electron 0
-UEFtrans.py temp.uef append Boot1
-UEFtrans.py temp.uef append Menu
+UEFtrans.py temp.uef append BOOT1
+UEFtrans.py temp.uef append MENU
 
 cp templates/blank.ssd transfer.ssd
-/data/david/Software/Emulation/elkulator/elkulator -tape temp.uef -disk transfer.ssd 
+elkulator -tape temp.uef -disk transfer.ssd 
 
 UEFtrans.py temp.uef new Electron 0
 SSD2UEF.py transfer.ssd temp.uef

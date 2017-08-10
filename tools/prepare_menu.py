@@ -3,7 +3,7 @@
 import os, re, stat, string
 
 text = open("Menu50M").read()
-f = open("Menu", "w")
+f = open("MENU", "w")
 
 lines = []
 numbers = {}
@@ -136,6 +136,6 @@ for line in lines:
 length = f.tell()
 f.close()
 
-f = open("Menu.inf", "w")
+f = open("MENU.inf", "w")
 f.write("$.Menu 0000 0000 %x" % length)
 f.close()

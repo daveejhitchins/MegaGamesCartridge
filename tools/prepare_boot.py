@@ -3,7 +3,7 @@
 import os, re, stat, string
 
 text = open("Boot1E").read()
-f = open("Boot1", "w")
+f = open("BOOT1", "w")
 
 lines = []
 numbers = {}
@@ -136,6 +136,6 @@ for line in lines:
 length = f.tell()
 f.close()
 
-f = open("Boot1.inf", "w")
+f = open("BOOT1.inf", "w")
 f.write("$.Boot1 0000 0000 %x" % length)
 f.close()
