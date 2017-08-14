@@ -661,7 +661,7 @@ if __name__ == "__main__":
     
     files = ["BOOT1", "FASTD", "MENU", "SUTILS", "SCODE"]
     decomp_addrs = [0x1400, 0xe00, 0x1400, "x", 0x1900]
-    rom_file = "mgcmenu.rom"
+    rom_file = "MENU.ROM"
     
     header_template = open("asm/romfs-template.oph").read()
     
@@ -677,8 +677,11 @@ if __name__ == "__main__":
     convert_files(files, decomp_addrs, data_address, header, details, rom_file)
     
     length = os.stat(rom_file)[stat.ST_SIZE]
+    print "%i bytes used." % length
+    
     remainder = length % 16384
     if remainder != 0:
+        print "Padding %s to 16K." % rom_file
         data = open(rom_file, "rb").read()
         open(rom_file, "wb").write(data + ("\xff" * (16384 - remainder))) 
     
