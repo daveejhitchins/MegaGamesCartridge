@@ -210,31 +210,6 @@ class Entry:
         self.genre2.write(fh)
 
 
-def read_roms(games_tsv):
-
-    roms = {}
-    for line in open(games_tsv).readlines():
-    
-        pieces = filter(lambda x: x, line.strip().split("\t"))
-        
-        name, publisher = pieces[:2]
-        rom_files = []
-        
-        i = 2
-        while i < len(pieces):
-            if pieces[i].endswith(".rom"):
-                rom_files.append(pieces[i])
-                i += 1
-            else:
-                break
-        
-        genres = pieces[i:i+2]
-        rest = pieces[i+2:]
-        roms[(name, publisher)] = (rom_files, genres, rest)
-    
-    return roms
-
-
 def make_entry(name, publisher, rom_files, genres, rest, page):
 
     entry = Entry()
@@ -274,37 +249,41 @@ if __name__ == "__main__":
         args.remove("-s")
         split = True
     
-    if split and len(args) == 7:
-        choices, games_tsv, menu_rom_file, roms_dir = args[1:5]
-        output_files = args[5:]
-    elif not split and len(args) == 6:
-        choices, games_tsv, menu_rom_file, roms_dir = args[1:5]
-        output_files = args[5:]
+    if split and len(args) == 6:
+        choices, menu_rom_file, roms_dir = args[1:4]
+        output_files = args[4:]
+    elif not split and len(args) == 5:
+        choices, menu_rom_file, roms_dir = args[1:4]
+        output_files = args[4:]
     else:
-        sys.stderr.write("Usage: %s <choices file> <games.tsv file> <Menu ROM> <ROMs directory> "
+        sys.stderr.write("Usage: %s <choices CSV file> <Menu ROM> <ROMs directory> "
             "<output EEPROM file>\n" % sys.argv[0])
-        sys.stderr.write("Usage: %s <choices file> <games.tsv file> <Menu ROM> <ROMs directory> "
+        sys.stderr.write("Usage: %s <choices CSV file> <Menu ROM> <ROMs directory> "
             "-s <output EEPROM file 1> <output EEPROM file 2>\n" % sys.argv[0])
         sys.exit(1)
     
     menu_rom = open(menu_rom_file, "rb").read()
-    roms = read_roms(games_tsv)
     
     # Collect single and double ROM sets.
     rom_sets = {1: [], 2: [], 3: []}
     
     for line in open(choices).readlines():
     
-        name, publisher = filter(lambda x: x, line.split("\t"))[:2]
-        name = name.strip()
-        publisher = publisher.strip()
+        pieces = filter(lambda x: x, line.strip().split(","))
         
-        try:
-            rom_files, genres, rest = roms[(name, publisher)]
-        except KeyError:
-            sys.stderr.write("Failed to find an entry for name '%s' and publisher "
-                "'%s' in CSV file '%s'.\n" % (name, publisher, roms_csv))
-            sys.exit(1)
+        name, publisher = pieces[:2]
+        rom_files = []
+        
+        i = 2
+        while i < len(pieces):
+            if pieces[i].endswith(".rom"):
+                rom_files.append(pieces[i])
+                i += 1
+            else:
+                break
+        
+        genres = pieces[i:i+2]
+        rest = pieces[i+2:]
         
         rom_sets[min(len(rom_files), 3)].append((name, publisher, rom_files, genres, rest))
     
