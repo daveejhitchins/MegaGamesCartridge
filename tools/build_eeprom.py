@@ -210,10 +210,10 @@ class Entry:
         self.genre2.write(fh)
 
 
-def read_roms(genres_tsv):
+def read_roms(games_tsv):
 
     roms = {}
-    for line in open(genres_tsv).readlines():
+    for line in open(games_tsv).readlines():
     
         pieces = filter(lambda x: x, line.strip().split("\t"))
         
@@ -275,20 +275,20 @@ if __name__ == "__main__":
         split = True
     
     if split and len(args) == 7:
-        choices, genres_tsv, menu_rom_file, roms_dir = args[1:5]
+        choices, games_tsv, menu_rom_file, roms_dir = args[1:5]
         output_files = args[5:]
     elif not split and len(args) == 6:
-        choices, genres_tsv, menu_rom_file, roms_dir = args[1:5]
+        choices, games_tsv, menu_rom_file, roms_dir = args[1:5]
         output_files = args[5:]
     else:
-        sys.stderr.write("Usage: %s <choices file> <genres.tsv file> <Menu ROM> <ROMs directory> "
+        sys.stderr.write("Usage: %s <choices file> <games.tsv file> <Menu ROM> <ROMs directory> "
             "<output EEPROM file>\n" % sys.argv[0])
-        sys.stderr.write("Usage: %s <choices file> <genres.tsv file> <Menu ROM> <ROMs directory> "
+        sys.stderr.write("Usage: %s <choices file> <games.tsv file> <Menu ROM> <ROMs directory> "
             "-s <output EEPROM file 1> <output EEPROM file 2>\n" % sys.argv[0])
         sys.exit(1)
     
     menu_rom = open(menu_rom_file, "rb").read()
-    roms = read_roms(genres_tsv)
+    roms = read_roms(games_tsv)
     
     # Collect single and double ROM sets.
     rom_sets = {1: [], 2: [], 3: []}
