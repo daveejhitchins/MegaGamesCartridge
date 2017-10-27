@@ -21,10 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import commands, os, stat, struct, sys, tempfile
 
-def compress(data, window = "output"):
+def compress(data, offset_bits = 4, window = "output"):
 
-    special = find_least_used(data)
+    max_offset = (1 << offset_bits) - 1
+    max_length = (1 << (7 - offset_bits)) + 2
     
+    special = find_least_used(data)
     output = [special]
     
     i = 0
@@ -81,7 +83,16 @@ def compress(data, window = "output"):
             # encoding a zero in the second byte, confusing the first two cases.
             #
             # special 0                 -> special
+            #
+            # Near references are defined using the number of bits passed in
+            # the offset_bits parameter. These vary from 2 to 5:
+            #
+            # special 0llllloo          -> length (3-34), offset (1-3)
+            # special 0llllooo          -> length (3-18), offset (1-7)
             # special 0llloooo          -> length (3-10), offset (1-15)
+            # special 0llooooo          -> length (3-6), offset (1-31)
+            #
+            # Far references:
             # special 1ooooooo llllllll -> offset (1-128), length (4-259)
             
             if window == "output":
@@ -89,10 +100,10 @@ def compress(data, window = "output"):
             else:
                 offset = len(output) - b
             
-            if length < 11 and offset < 16:
+            if length <= max_length and offset <= max_offset:
                 # Store non-zero offset to avoid potential encoding of zero
                 # in the second byte.
-                output += [special, ((length - 3) << 4) | offset]
+                output += [special, ((length - 3) << offset_bits) | offset]
                 i += length
             
             elif length > 3:
@@ -185,52 +196,22 @@ def find_match_in_compressed(output, data, k, i):
     return match
 
 
-def decompress(data, window = "output", stop_at = None):
+# Each compressed file entry is
+#   trigger address (2) + source address (2) + destination address (2)
+# + destination end address (2) + count mask (1) + offset bits (1) = 10
+compressed_entry_size = 10
 
-    special = data[0]
-    output = []
-    
-    i = 1
-    while i < len(data):
-    
-        b = data[i]
-        
-        if b != special:
-            output.append(b)
-            i += 1
-        else:
-            offset = data[i + 1]
-            if offset == 0:
-                output.append(special)
-                i += 2
-            
-            else:
-                j = i
-                
-                if offset & 0x80 == 0:
-                    count = (offset >> 4) + 3
-                    offset = offset & 0x0f
-                    i += 2
-                else:
-                    offset = (offset & 0x7f) + 1
-                    count = data[i + 2] + 4
-                    i += 3
-                
-                if window == "compressed":
-                    offset -= count
-                
-                while count > 0:
-                    if window == "output":
-                        output.append(output[-offset])
-                    else:
-                        output.append(data[j - offset - count])
-                    count -= 1
-        
-        if stop_at != None and len(output) > stop_at:
-            return data[:i], output
-    
-    return output
+class AddressInfo:
 
+    def __init__(self, name, addr, src_label, decomp_addr, decomp_end_addr,
+                       offset_bits):
+    
+        self.name = name
+        self.addr = addr
+        self.src_label = src_label
+        self.decomp_addr = decomp_addr
+        self.decomp_end_addr = decomp_end_addr
+        self.offset_bits = offset_bits
 
 class Block:
 
@@ -240,9 +221,10 @@ class Block:
 
 class Compressed(Block):
 
-    def __init__(self, data, info, raw_length):
+    def __init__(self, data, info, raw_length, offset_bits):
         Block.__init__(self, data, info)
         self.raw_length = raw_length
+        self.offset_bits = offset_bits
 
 def format_data(data):
 
@@ -382,31 +364,45 @@ def convert_files(files, decomp_addrs, data_address, header_file, details, rom_f
                 header = write_block(name, load, exec_, "", this, 0x80, 0)
                 
                 # Compress the raw data.
-                cdata = "".join(map(chr, compress(map(ord, raw_data))))
-                print "Compressed %s from %i to %i bytes at $%x." % (repr(name)[1:-1],
-                    len(raw_data), len(cdata), load)
+                compression_results = []
+                
+                for compress_offset_bits in range(3, 8):
+                    cdata = "".join(map(chr, compress(map(ord, raw_data),
+                        offset_bits = compress_offset_bits)))
+                    
+                    l = len(cdata)
+                    if compression_results and l > compression_results[0][0]:
+                        break
+                    
+                    compression_results.append((l, cdata, compress_offset_bits))
+                
+                compression_results.sort()
+                cdata, compress_offset_bits = compression_results[0][1:]
+                print "Compressed %s from %i to %i bytes with %i-bit offset at $%x." % (repr(name)[1:-1],
+                    len(raw_data), len(cdata), compress_offset_bits, load)
                 
                 # Calculate the space between the end of the ROM and the
                 # current address, leaving room for an end of ROM marker.
                 remaining = end_address - address - 1
                 
-                if remaining < len(header) + 8 + len(cdata):
+                if remaining < len(header) + compressed_entry_size + len(cdata):
                 
                     # The file won't fit into the current ROM. Either put it in a
                     # new one, or split it and put the rest of the file there.
                     print "File %s won't fit in the current ROM - %i bytes too long." % (
-                        repr(name), len(header) + 8 + len(cdata) - remaining)
+                        repr(name), len(header) + compressed_entry_size + len(cdata) - remaining)
                     sys.exit(1)
                 
                 else:
                     # Reserve space for the ROM address, decompression start
                     # and finish addresses, source address and compressed data.
-                    end_address -= 8 + len(cdata)
+                    end_address -= compressed_entry_size + len(cdata)
                     
                     if this == 0:
                         file_addresses.append(address)
                     
-                    blocks.append(Compressed(cdata, info, len(raw_data)))
+                    blocks.append(Compressed(cdata, info, len(raw_data),
+                                  compress_offset_bits))
                     triggers.append(address + len(header) - 1)
                     
                     address += len(header)
@@ -571,7 +567,8 @@ def convert_files(files, decomp_addrs, data_address, header_file, details, rom_f
             
                 addr = triggers.pop(0)
                 decomp_addr = decomp_addr & 0xffff
-                addresses.append((name, addr, src_label, decomp_addr, decomp_addr + block_info.raw_length))
+                addresses.append(AddressInfo(name, addr, src_label, decomp_addr,
+                    decomp_addr + block_info.raw_length, block_info.offset_bits))
                 
                 os.write(tf, "\n; %s\n" % repr(name)[1:-1])
                 os.write(tf, src_label + ":\n")
@@ -580,27 +577,43 @@ def convert_files(files, decomp_addrs, data_address, header_file, details, rom_f
         #os.write(tf, "\n.alias debug %i" % (49 + roms.index(rom)))
         os.write(tf, "\ntriggers:\n")
         
-        for name, addr, src_label, decomp_addr, decomp_end_addr in addresses:
-            if decomp_addr != "x":
-                os.write(tf, ".byte $%02x, $%02x ; %s\n" % (addr & 0xff, addr >> 8, repr(name)[1:-1]))
+        for address_info in addresses:
+            if address_info.decomp_addr != "x":
+                os.write(tf, ".byte $%02x, $%02x ; %s\n" % (
+                    address_info.addr & 0xff, address_info.addr >> 8,
+                    repr(address_info.name)[1:-1]))
         
         os.write(tf, "\nsrc_addresses:\n")
         
-        for name, addr, src_label, decomp_addr, decomp_end_addr in addresses:
-            if decomp_addr != "x":
-                os.write(tf, ".byte <%s, >%s ; source address\n" % (src_label, src_label))
+        for address_info in addresses:
+            if address_info.decomp_addr != "x":
+                os.write(tf, ".byte <%s, >%s ; source address\n" % (
+                    address_info.src_label, address_info.src_label))
         
         os.write(tf, "\ndest_addresses:\n")
         
-        for name, addr, src_label, decomp_addr, decomp_end_addr in addresses:
-            if decomp_addr != "x":
-                os.write(tf, ".byte $%02x, $%02x ; decompression start address\n" % (decomp_addr & 0xff, decomp_addr >> 8))
+        for address_info in addresses:
+            if address_info.decomp_addr != "x":
+                os.write(tf, ".byte $%02x, $%02x ; decompression start address\n" % (
+                    address_info.decomp_addr & 0xff,
+                    address_info.decomp_addr >> 8))
         
         os.write(tf, "\ndest_end_addresses:\n")
         
-        for name, addr, src_label, decomp_addr, decomp_end_addr in addresses:
-            if decomp_addr != "x":
-                os.write(tf, ".byte $%02x, $%02x ; decompression end address\n" % (decomp_end_addr & 0xff, decomp_end_addr >> 8))
+        for address_info in addresses:
+            if address_info.decomp_addr != "x":
+                os.write(tf, ".byte $%02x, $%02x ; decompression end address\n" % (
+                    address_info.decomp_end_addr & 0xff,
+                    address_info.decomp_end_addr >> 8))
+        
+        os.write(tf, "\noffset_bits_and_count_masks:\n")
+        
+        for address_info in addresses:
+            if address_info.decomp_addr != "x":
+                offset_mask = (1 << address_info.offset_bits) - 1
+                count_mask = 0xff ^ offset_mask
+                os.write(tf, ".byte $%02x    ; count mask\n" % count_mask)
+                os.write(tf, ".byte %i     ; offset bits\n" % address_info.offset_bits)
         
         os.write(tf, "\n")
         
@@ -630,6 +643,7 @@ def get_data_address(header_file, rom_file):
     os.write(tf, "src_addresses:\n")
     os.write(tf, "dest_addresses:\n")
     os.write(tf, "dest_end_addresses:\n")
+    os.write(tf, "offset_bits_and_count_masks:\n")
     os.write(tf, "end_of_romfs_marker:\n")
     os.close(tf)
     
@@ -659,8 +673,8 @@ if __name__ == "__main__":
         "rom name": '.byte "MGC", 13',
         }
     
-    files = ["BOOT1", "FASTD", "MENU", "SUTILS", "SCODE"]
-    decomp_addrs = [0x1400, 0xe00, 0x1400, "x", 0x1900]
+    files = ["BOOT1", "TITLE", "FASTD", "MENU", "SUTILS", "SCODE"]
+    decomp_addrs = [0x1400, 0x2e00, 0xe00, 0x1400, "x", 0x1900]
     rom_file = "MENU.ROM"
     
     header_template = open("asm/romfs-template.oph").read()

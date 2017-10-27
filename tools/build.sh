@@ -23,6 +23,7 @@ python -c '
 open("build/BOOT1.inf", "w").write("$.BOOT 1400 8023 %x" % len(open("build/BOOT1").read()))
 open("build/FASTD.inf", "w").write("$.FASTD e00 e00 %x" % len(open("build/FASTD").read()))
 open("build/MENU.inf", "w").write("$.MENU 1400 8023 %x" % len(open("build/MENU").read()))
+open("build/TITLE.inf", "w").write("$.TITLE 2e00 2e00 %x" % len(open("build/TITLE").read()))
 '
 
 tools/regenerate_sutils.sh
