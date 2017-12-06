@@ -1,0 +1,83 @@
+MGC Menu ROM Build Sequence.
+
+Date: 06-12-17
+
+Tools:
+
+(1) FastRFS
+
+Link to FastRFS (formally BuildRFS):  http://mdfs.net/Software/BBC/SROM/FastRFS
+
+FastRFS Function:
+
+Gathers-up the required contents for the MGC Menu ROM and loads them, into the Menu ROM in the sequence they will apear if a:  *CAT (*.) <RETURN> is performed within the ROMFS, also adding the entered ROM Title and Copyright strings to to correct places. It also adds code that speeds-up loading of ROMFS contents.
+
+
+ROM Contents (in the sequence they are entered into FastRFS):
+
+(1) !BOOT
+	Machine code BOOT loader
+
+(2) BOOT
+	Check for Index presence and Menu Loader
+
+(3) FastDisp
+	JBNs fast search and display machine code
+
+(4) MGCMENU
+	MGC compressed BASIC Menu code
+
+(5) ROMLOAD
+	Martin Barr's MGC Utility to load 16K blocks into the MGC
+
+(6) SECPROG
+	Martin Barr's MGC Utility to load 64K blocks into the MGC
+
+(7) SECWIPE
+	Martin Barr's MGC Utility to clear a 64K block in the MGC
+
+(8) VUROM
+	Martin Barr's MGC Utility to view the MGC's contents
+
+
+FastRFS Operation and Sequence:
+
+(1) CHAIN "FastRFS"
+
+	FastRFS Prompt		Responce
+(2)	ROM title:			RH MGC MenuROM 1V3	-	Check version number
+
+(3)	ROM copyright:		(C) 2017 Retro Hardware	-	Check date
+
+(4) Enter files to add, end with RETURN
+	File to add:			!BOOT
+	Filename to use:		!BOOT
+
+(5)	File to add:			BOOT
+	Filename to use:		BOOT
+
+(6)	File to add:			MGCJBN
+	Filename to use:		FastDisp
+
+(7)	File to add:			MENU50MP	-	50 = iteration : M = version : P = packed << latest
+	Filename to use:		MGCMENU
+
+(8)	File to add:			ROMLOAD
+	Filename to use:		ROMLOAD
+
+(9)	File to add:			SECPROG
+	Filename to use:		SECPROG
+
+(10)	File to add:			SECWIPE
+	Filename to use:		SECWIPE
+
+(11)	File to add:			VUROM
+	Filename to use:		VUROM
+
+(12)	File to add:			SECWIPE
+	Filename to use:		SECWIPE
+
+(13)	File to add:			<RETURN>
+	Save ROM as:		MENU
+
+END:
