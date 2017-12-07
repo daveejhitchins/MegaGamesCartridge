@@ -10,7 +10,9 @@ Link to FastRFS (formally BuildRFS):  http://mdfs.net/Software/BBC/SROM/FastRFS
 
 FastRFS Function:
 
-Gathers-up the required contents for the MGC Menu ROM and loads them, into the Menu ROM in the sequence they will apear if a:  *CAT (*.) <RETURN> is performed within the ROMFS, also adding the entered ROM Title and Copyright strings to to correct places. It also adds code that speeds-up loading of ROMFS contents.
+Gathers-up the required contents for the MGC Menu ROM and loads them, into the Menu ROM in the sequence
+they will apear if a:  *CAT (*.) <RETURN> is performed within the ROMFS, also adding the entered ROM
+Title and Copyright strings to to correct places. It also adds code that speeds-up loading of ROMFS contents.
 
 
 ROM Contents (in the sequence they are entered into FastRFS):
@@ -44,40 +46,40 @@ FastRFS Operation and Sequence:
 
 (1) CHAIN "FastRFS"
 
-	FastRFS Prompt		Responce
-(2)	ROM title:			RH MGC MenuROM 1V3	-	Check version number
+	FastRFS Prompt		Responce			Note
+(2)	ROM title:		RH MGC MenuROM 1V3		Check version number
 
-(3)	ROM copyright:		(C) 2017 Retro Hardware	-	Check date
+(3)	ROM copyright:		(C) 2017 Retro Hardware		Check date
 
 (4) Enter files to add, end with RETURN
-	File to add:			!BOOT
-	Filename to use:		!BOOT
+	File to add:		!BOOT
+	Filename to use:	!BOOT
 
-(5)	File to add:			BOOT
-	Filename to use:		BOOT
+(5)	File to add:		BOOT
+	Filename to use:	BOOT
 
-(6)	File to add:			MGCJBN
-	Filename to use:		FastDisp
+(6)	File to add:		MGCJBN
+	Filename to use:	FastDisp
 
-(7)	File to add:			MENU50MP	-	50 = iteration : M = version : P = packed << latest
-	Filename to use:		MGCMENU
+(7)	File to add:		MENU50MP			50 = iteration : M = version : P = packed << latest
+	Filename to use:	MGCMENU
 
-(8)	File to add:			ROMLOAD
-	Filename to use:		ROMLOAD
+(8)	File to add:		ROMLOAD
+	Filename to use:	ROMLOAD
 
-(9)	File to add:			SECPROG
-	Filename to use:		SECPROG
+(9)	File to add:		SECPROG
+	Filename to use:	SECPROG
 
-(10)	File to add:			SECWIPE
-	Filename to use:		SECWIPE
+(10)	File to add:		SECWIPE
+	Filename to use:	SECWIPE
 
-(11)	File to add:			VUROM
-	Filename to use:		VUROM
+(11)	File to add:		VUROM
+	Filename to use:	VUROM
 
-(12)	File to add:			SECWIPE
-	Filename to use:		SECWIPE
+(12)	File to add:		SECWIPE
+	Filename to use:	SECWIPE
 
-(13)	File to add:			<RETURN>
+(13)	File to add:		<RETURN>
 	Save ROM as:		MENU
 
-END:
+	END:
