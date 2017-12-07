@@ -1,1 +1,14 @@
-0317A00920F7FFA98AA22BA0094CF7FF6B65793920434841494E2022426F6F74227C4D0D426F74227C4D0D42617369630D00
+0900  A2 17     LDX   &17     Load X #&17
+0902  A0 09     LDY   &09     Load Y #&09
+0904  20 F7 FF  JSR   &FFF7   OSCLI > Address &0917
+0907  A9 8A     LDA   &8A     Load A #&8A
+0909  A2 00     LDX   &00     Load X #&00
+090B  A0 89     LDY   &89     Load Y #&89
+090D  20 F4 FF  JSR   &FFF4   OSBYTE > Insert value into buffer
+0910  A2 2B     LDX   &2B     Load X #&2B
+0912  A0 09     LDY   &09     Load Y #&09
+0914  4C F7 FF  JMP   &FFF7   OSCLI
+0917  EQUS "KEY9 CHAIN "BOOT"
+0928  EQUS "|M" 
+092B  EQUS "BASIC"
+0930  EQUB "0D"
