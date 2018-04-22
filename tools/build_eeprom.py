@@ -171,6 +171,10 @@ class Entry:
         if fh != None:
             self.read(fh)
     
+    def __repr__(self):
+    
+        return "Entry(name='%s' page=%i)" % (self.name, self.page)
+    
     def read(self, fh):
     
         title = fh.read(46)
@@ -244,10 +248,15 @@ if __name__ == "__main__":
 
     args = sys.argv[:]
     split = False
+    verbose = False
     
     if "-s" in args:
         args.remove("-s")
         split = True
+    
+    if "-v" in args:
+        args.remove("-v")
+        verbose = True
     
     if split and len(args) == 6:
         choices, menu_rom_file, roms_dir = args[1:4]
@@ -256,10 +265,15 @@ if __name__ == "__main__":
         choices, menu_rom_file, roms_dir = args[1:4]
         output_files = args[4:]
     else:
+        sys.stderr.write("\nUsage: %s <choices CSV file> <Menu ROM> <ROMs directory> "
+            "<output EEPROM file>\n"
+            "Create an EEPROM image based on the choices in the CSV file and using "
+            "the ROMs from the given ROMs directory.\n\n" % sys.argv[0])
         sys.stderr.write("Usage: %s <choices CSV file> <Menu ROM> <ROMs directory> "
-            "<output EEPROM file>\n" % sys.argv[0])
-        sys.stderr.write("Usage: %s <choices CSV file> <Menu ROM> <ROMs directory> "
-            "-s <output EEPROM file 1> <output EEPROM file 2>\n" % sys.argv[0])
+            "-s <output EEPROM file 1> <output EEPROM file 2>\n"
+            "As above but writes a copy of the first EEPROM image with the upper "
+            "and lower banks switched.\n"
+            "These can be used as large individual ROM images in my fork of Elkulator.\n\n" % sys.argv[0])
         sys.exit(1)
     
     menu_rom = open(menu_rom_file, "rb").read()
@@ -365,6 +379,12 @@ if __name__ == "__main__":
     
     for pair in ordered:
         ind.entries.append(entries[pair])
+    
+    if verbose:
+        ordered = banks.items()
+        ordered.sort()
+        for n, name in ordered:
+            print n, name
     
     # Write the index to a string.
     io = StringIO()

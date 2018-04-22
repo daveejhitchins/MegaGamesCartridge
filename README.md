@@ -25,3 +25,17 @@ The ROM should be usable in an emulator or in a real machine.
 The name, copyright information and version are stored in the
 `tools/make_rom.py` script. It should be fairly straightforward to change
 these.
+
+## Building a full EEPROM image
+
+The `tools/build_eeprom.py` script can build the entire 4 MB EEPROM image from
+a CSV file containing the user's choices, the menu ROM created using the
+process above, and a directory of individual ROM images.
+
+Run the script in the following way, where `choices.csv` and `/tmp/ROMs` are
+examples of file and directory locations:
+
+  tools/build_eeprom.py choices.csv MENU.ROM /tmp/ROMs /tmp/MGC.ROM
+
+The output file - `MGC.ROM` in this case - is created and should be padded to
+4 MB in size.

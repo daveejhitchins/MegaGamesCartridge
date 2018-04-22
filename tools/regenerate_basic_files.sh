@@ -9,8 +9,17 @@ UEFtrans.py temp.uef new Electron 0
 UEFtrans.py temp.uef append BOOT1
 UEFtrans.py temp.uef append MENU
 
-cp templates/blank.ssd transfer.ssd
-elkulator -tape temp.uef -disk transfer.ssd 
+dd if=/dev/zero of=transfer.ssd bs=1024 count=200
+echo "In Elkulator, copy the BOOT1 and MENU files to disk, like this:"
+echo "*TAPE"
+echo "*EXEC BOOT1"
+echo "*DISK"
+echo 'SAVE "BOOT1"'
+echo "*TAPE"
+echo "*EXEC MENU"
+echo "*DISK"
+echo 'SAVE "MENU"'
+elkulator -tape temp.uef -disk transfer.ssd
 
 UEFtrans.py temp.uef new Electron 0
 SSD2UEF.py transfer.ssd temp.uef
