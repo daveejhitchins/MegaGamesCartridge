@@ -233,6 +233,9 @@ def make_entry(name, publisher, rom_files, genres, rest, page):
     entry.launch = Launch(value = Launch.choices[launch])
     
     if len(rom_files) > 2:
+        # Games with more than 2 ROMs are encoded with a command that
+        # includes two more bytes: the low and high bytes of the address
+        # where the base ROM bank number of the set of ROMs is stored.
         entry.command = Command(offset = int(rest[1]), length = int(rest[2]),
             attributes = (int(rest[3]), int(rest[4])))
     else:
