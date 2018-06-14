@@ -22,7 +22,7 @@ if [ -e asm ] && [ -e build ] && [ -e tools ] && [ -e rom_tools ]; then
         fi
     done
 
-    for name in "Boot1" "Boot1.inf" "Menu" "Menu.inf"; do
+    for name in "BOOT1" "BOOT1.inf" "MENU" "MENU.inf"; do
         if [ -e $name ]; then
             rm $name
         fi
