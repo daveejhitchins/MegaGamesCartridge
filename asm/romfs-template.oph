@@ -5,6 +5,7 @@
 .alias exported_rom_pointer_low $f6
 .alias exported_rom_pointer_high $f7
 .alias OSRDRM $ffb9
+.alias rom_pointer $a00
 
 rom_start:
 .byte 0, 0, 0   ; null language entry
@@ -30,6 +31,8 @@ copyright_string:
 
 service_entry:
 
+    cmp #3
+    beq boot_command
     ; Code to call a check for the ROM's star command.
     cmp #4
     beq service_command
@@ -41,8 +44,16 @@ service_entry:
     service_entry_exit:
     rts
 
+boot_command:
+    jsr reset_pointer
+
+    ; Use ROMFS.
+    lda #141                    ; *ROM
+    jsr $fff4
+
+    jmp sync_pointers
+
 rom_name:
-; A ROM name is included when the -M option is used.
 %(rom name)s
 
 init_command:
@@ -57,13 +68,7 @@ init_command:
     bcc exit
 
     init_set_pointer:
-
-    lda #<data
-    sta exported_rom_pointer
-    lda #>data
-    sta [exported_rom_pointer + 1]
-
-    init_store_rom_number:
+    jsr sync_pointers
     lda current_paged_rom
     eor #$ff
     and #$0f
@@ -99,6 +104,10 @@ claim1:
     inc [exported_rom_pointer + 1]
 
     claim1_sync:
+    lda exported_rom_pointer
+    sta rom_pointer
+    lda [exported_rom_pointer + 1]
+    sta [rom_pointer + 1]
 
     jmp claim
 
@@ -139,22 +148,24 @@ service_command:
     lda #4                      ; restore A
     rts
 
-rom_command:
+reset_pointer:
+    lda #<data
+    sta rom_pointer
+    lda #>data
+    sta [rom_pointer + 1]
+    rts
 
-; Use ROMFS.
-lda #141                    ; *ROM
-jsr $fff4
-
-; Executes the OS command to run the bootloader.
-
-ldx #<boot_command
-ldy #>boot_command
-jmp $fff7
-
-boot_command: .byte "*/", 13
+sync_pointers:
+    lda rom_pointer
+    sta exported_rom_pointer
+    lda [rom_pointer + 1]
+    sta [exported_rom_pointer + 1]
+    rts
 
 trigger_check:
 
+    lda #43
+    jsr $ffee
     ; The following check was obtained from
     ; http://mdfs.net/Info/Comp/BBC/SROMs/FastROMFS
 
@@ -191,6 +202,8 @@ trigger_check:
 
     trigger_exit:
 
+    lda #47
+    jsr $ffee
     pla         ; Restore X.
     tax
     trigger_check_quick_exit:
@@ -198,6 +211,12 @@ trigger_check:
 
 trigger_start_decompression:
 
+    txa
+    pha
+    lda #42
+    jsr $ffee
+    pla
+    tax
     lda src_addresses,x     ; Read the source address into the addresses used
     sta src_low             ; for the source address in the decompression
     inx                     ; routine.
