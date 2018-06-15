@@ -137,8 +137,9 @@ service_command:
     tax
     pla
     tay
-    lda #0
-    rts
+    ;lda #0
+
+    jmp exit_to_basic_with_f8
 
     service_command_not_found:
     pla                         ; pop Y and X registers off the stack
@@ -454,7 +455,7 @@ main_mgc_code:
     jsr $fff4
     cpx #1              ; power up?
     beq enter_mgc_code
-    rts                 ; otherwise exit
+    rts
 
 enter_mgc_code:
 
@@ -729,20 +730,6 @@ main_loop:
 end_loop:
 
     cli
-
-    lda #12     ; CLS
-    jsr $ffee
-
-    ; Exit to MODE 6.
-    ;lda #22
-    ;jsr $ffee
-    ;lda #6
-    ;jsr $ffee
-
-    ;lda #15
-    ;ldx #1
-    ;jsr $fff4
-
     rts
 
 calibrate:
@@ -814,23 +801,26 @@ block_scanlines:
 show_message:
 
     ldx #0
-
-    print_loop:
-        lda text,x
-        jsr $ffee
-        inx
-
-        cpx #[text_end - text]
-        bne print_loop
+    jsr print_loop
 
     lda #$ff                ; Blank the palette.
     sta $fe08
     sta $fe09
 
     ldx #2                  ; Decompress the file at offset 2 (index 1).
-    pha                     ; The following routine pop a value off the stack
+    pha                     ; The following routine pops a value off the stack
                             ; so push a dummy value.
     jmp trigger_start_decompression
+
+print_loop:
+    lda text,x
+    jsr $ffee
+    inx
+
+    cpx #[text_end - text]
+    bne print_loop
+
+    rts
 
 animate_title:
 
@@ -870,7 +860,57 @@ animate_title:
     rts
 
 text:
-.byte 22,1, 23,1,0,0,0,0,0,0,0,0
+.byte 22,1
+cursor_off:
+.byte 23,1,0,0,0,0,0,0,0,0
 text_end:
+
+exit_to_basic_with_f8:
+
+    ; Exit to MODE 6.
+    lda #22
+    jsr $ffee
+    lda #6
+    jsr $ffee
+
+    ldx #2
+    jsr print_loop
+
+    lda #15
+    ldx #1
+    jsr $fff4
+
+    lda #21         ; Disable VDU output.
+    jsr $ffee
+
+    ; Due to the way the decompression routine uses the stack we need to wrap
+    ; calls to it in subroutines (implicitly pushing the return address onto
+    ; the stack) and jump into it directly.
+    jsr load_fastd
+    jsr load_menu
+
+    lda #$8a
+    ldx #0          ; (keyboard buffer)
+    ldy #$88        ; (fn key 8)
+    jsr $fff4       ; (OSBYTE 8a - insert character into buffer)
+
+    ldx #<basic_text
+    ldy #>basic_text
+    jmp $fff7       ; (OSCLI - BASIC)
+
+basic_text:
+.byte "BASIC", 13
+
+load_fastd:
+
+    ldx #4  ; Decompress the file at offset 4 (index 2).
+    pha     ; Push a dummy value for the decompression routine to pop.
+    jmp trigger_start_decompression
+
+load_menu:
+
+    ldx #6  ; Decompress the file at offset 6 (index 3).
+    pha     ; Push a dummy value for the decompression routine to pop.
+    jmp trigger_start_decompression
 
 data:
