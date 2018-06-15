@@ -26,6 +26,5 @@ open("build/MENU.inf", "w").write("$.MENU 1400 8023 %x" % len(open("build/MENU")
 open("build/TITLE.inf", "w").write("$.TITLE 2e00 2e00 %x" % len(open("build/TITLE").read()))
 '
 
-tools/regenerate_sutils.sh
 #tools/rebuild_uef.sh
 tools/make_rom.py

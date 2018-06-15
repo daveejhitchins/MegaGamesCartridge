@@ -164,8 +164,6 @@ sync_pointers:
 
 trigger_check:
 
-    lda #43
-    jsr $ffee
     ; The following check was obtained from
     ; http://mdfs.net/Info/Comp/BBC/SROMs/FastROMFS
 
@@ -202,8 +200,6 @@ trigger_check:
 
     trigger_exit:
 
-    lda #47
-    jsr $ffee
     pla         ; Restore X.
     tax
     trigger_check_quick_exit:
@@ -211,12 +207,6 @@ trigger_check:
 
 trigger_start_decompression:
 
-    txa
-    pha
-    lda #42
-    jsr $ffee
-    pla
-    tax
     lda src_addresses,x     ; Read the source address into the addresses used
     sta src_low             ; for the source address in the decompression
     inx                     ; routine.
@@ -410,10 +400,9 @@ copy_decompressed:  ; X=number of bytes to copy
 
     rts
 
-.alias end_scroll_offset 200
+.alias end_scroll_offset 176
 .alias title_palette_start [128 + 68]
 .alias title_palette_finish [128 + 105]
-.alias title_dest_end $5800
 
 .alias long_field 60
 .alias short_field 59
@@ -424,10 +413,8 @@ copy_decompressed:  ; X=number of bytes to copy
 
 .alias frame_counter $72
 .alias text_lines $73
-.alias frame_delay $74
 .alias palette_lines $75
 
-.alias initial_frame_delay_value 1
 .alias initial_scanlines 1
 .alias most_scanlines 31
 .alias max_scanlines 41
@@ -436,8 +423,8 @@ copy_decompressed:  ; X=number of bytes to copy
 .alias visible_palette_lines_value 100
 .alias visible_palette_lines_max 188
 .alias initial_scroll_offset 0
-.alias initial_palette_offset 3
-;.alias end_scroll_offset 200           ; defined in the mgccode-*.oph files
+.alias initial_palette_offset 27
+.alias initial_animation_timer 100
 
 .alias screen_low $76
 .alias screen_high $77
@@ -447,10 +434,10 @@ copy_decompressed:  ; X=number of bytes to copy
 .alias visible_palette_lines $7a
 .alias palette_counter $7b
 .alias palette_offset $7c
-.alias initial_frame_delay $7d
 .alias animation_index $7e
 .alias animation_value0 $84
 .alias animation_value1 $85
+.alias animation_timer $86
 
 ; Cycle a full range of palette colours (3 lines per colour, 6 colours,
 ; 2 cycles -> 36 lines, with one extra that doesn't seem to mess up the flow).
@@ -458,8 +445,6 @@ copy_decompressed:  ; X=number of bytes to copy
 ;.alias title_palette_finish [128 + 105]; defined in the mgccode-*.oph files
 .alias palette_fe08 $2e00
 .alias palette_fe09 $2f00
-.alias title_dest_address $2e00
-;.alias title_dest_end $5800            ; defined in the mgccode-*.oph files
 
 main_mgc_code:
 
@@ -475,19 +460,15 @@ enter_mgc_code:
 
     jsr show_message
 
-    lda #$00
+    lda #$c0            ; 0x3780 >> 1 (0x3000 + 3*0x280)
     sta screen_low
-    lda #$18
+    lda #$1b
     sta screen_high
 
     sei
 
     lda #initial_scanlines      ; Number of MODE 3 scanlines to display
     sta text_lines
-
-    lda #initial_frame_delay_value
-    sta initial_frame_delay     ; Number of frames to show each displacement.
-    sta frame_delay
 
     lda #max_palette_lines_value
     sta max_palette_lines
@@ -503,6 +484,9 @@ enter_mgc_code:
     sta animation_value0
     lda palette_fe09,x
     sta animation_value1
+
+    lda #initial_animation_timer
+    sta animation_timer
 
     ; Clear the vsync interrupt bit.
 
@@ -630,18 +614,10 @@ main_loop:
     sta $fe08
     sta $fe09
 
-    dec frame_delay                 ; Only update every few frames, depending
-    beq +
-    jmp next_frame                  ; on the frame delay constant.
-*   lda initial_frame_delay
-    sta frame_delay
-
     lda scroll_offset               ; Check whether the scrolling has finished.
     cmp #end_scroll_offset
     bcc scroll_down
 
-    lda #1
-    sta initial_frame_delay
     jsr animate_title               ; If scrolling has finished then animate
     jmp check_keys                  ; the title and check the keys as usual.
 
@@ -726,6 +702,10 @@ main_loop:
 
     cpx #$ff
     bne end_loop
+
+    lda animation_timer
+    cmp #0
+    beq end_loop
 
     next_frame:
 
@@ -886,6 +866,7 @@ animate_title:
     bne animation_title_loop
 
     stx animation_index
+    dec animation_timer
     rts
 
 text:

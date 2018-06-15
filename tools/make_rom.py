@@ -673,8 +673,8 @@ if __name__ == "__main__":
         "rom name": '.byte "MGC", 13',
         }
     
-    files = ["BOOT1", "TITLE", "FASTD", "MENU", "SUTILS", "SCODE"]
-    decomp_addrs = [0x1400, 0x2e00, 0xe00, 0x1400, "x", 0x1900]
+    files = ["BOOT1", "TITLE", "FASTD", "MENU"]
+    decomp_addrs = [0x1400, 0x2e00, 0xe00, 0x1400]
     rom_file = "MENU.ROM"
     
     header_template = open("asm/romfs-template.oph").read()
