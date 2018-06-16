@@ -873,15 +873,20 @@ exit_to_basic_with_f8:
     lda #6
     jsr $ffee
 
-    ldx #2
-    jsr print_loop
+    lda #$ff        ; Blank the palette.
+    sta $fe08
+    sta $fe09
 
-    lda #15
+    lda #15         ; Clear the input buffer.
     ldx #1
     jsr $fff4
 
-    lda #21         ; Disable VDU output.
-    jsr $ffee
+    lda #$8a
+    ldx #0          ; (keyboard buffer)
+    ldy #$88        ; (fn key 8)
+    jsr $fff4       ; (OSBYTE 8a - insert character into buffer)
+
+    sei
 
     ; Due to the way the decompression routine uses the stack we need to wrap
     ; calls to it in subroutines (implicitly pushing the return address onto
@@ -889,10 +894,7 @@ exit_to_basic_with_f8:
     jsr load_fastd
     jsr load_menu
 
-    lda #$8a
-    ldx #0          ; (keyboard buffer)
-    ldy #$88        ; (fn key 8)
-    jsr $fff4       ; (OSBYTE 8a - insert character into buffer)
+    cli
 
     ldx #<basic_text
     ldy #>basic_text
