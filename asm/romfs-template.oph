@@ -425,7 +425,7 @@ copy_decompressed:  ; X=number of bytes to copy
 .alias visible_palette_lines_max 188
 .alias initial_scroll_offset 0
 .alias initial_palette_offset 27
-.alias initial_animation_timer 100
+.alias initial_animation_timer 50
 
 .alias screen_low $76
 .alias screen_high $77
@@ -459,14 +459,16 @@ main_mgc_code:
 
 enter_mgc_code:
 
+    sei
+
     jsr show_message
+    ldx #2
+    jsr load_file
 
     lda #$c0            ; 0x3780 >> 1 (0x3000 + 3*0x280)
     sta screen_low
     lda #$1b
     sta screen_high
-
-    sei
 
     lda #initial_scanlines      ; Number of MODE 3 scanlines to display
     sta text_lines
@@ -807,10 +809,7 @@ show_message:
     sta $fe08
     sta $fe09
 
-    ldx #2                  ; Decompress the file at offset 2 (index 1).
-    pha                     ; The following routine pops a value off the stack
-                            ; so push a dummy value.
-    jmp trigger_start_decompression
+    rts
 
 print_loop:
     lda text,x
@@ -891,8 +890,10 @@ exit_to_basic_with_f8:
     ; Due to the way the decompression routine uses the stack we need to wrap
     ; calls to it in subroutines (implicitly pushing the return address onto
     ; the stack) and jump into it directly.
-    jsr load_fastd
-    jsr load_menu
+    ldx #4
+    jsr load_file
+    ldx #6
+    jsr load_file
 
     cli
 
@@ -903,16 +904,10 @@ exit_to_basic_with_f8:
 basic_text:
 .byte "BASIC", 13
 
-load_fastd:
+load_file:  ; Decompress the file at offset X (index X/2).
 
-    ldx #4  ; Decompress the file at offset 4 (index 2).
-    pha     ; Push a dummy value for the decompression routine to pop.
-    jmp trigger_start_decompression
-
-load_menu:
-
-    ldx #6  ; Decompress the file at offset 6 (index 3).
-    pha     ; Push a dummy value for the decompression routine to pop.
+    pha     ; The following routine pops a value off the stack so push a dummy
+            ; value.
     jmp trigger_start_decompression
 
 data:
