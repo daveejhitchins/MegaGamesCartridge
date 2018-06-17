@@ -30,3 +30,4 @@ cp temp/MENU build/MENU
 echo "Cleaning up temporary files."
 rm transfer.ssd temp.uef
 rm -r temp
+rm BOOT1 MENU BOOT1.inf MENU.inf
