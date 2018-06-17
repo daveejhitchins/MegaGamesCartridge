@@ -125,20 +125,61 @@ service_command:
     service_command_rom_loop:
 
         lda ($f2),y
+        cmp #32
+        beq service_command_read_delay
         cmp rom_name,x
         bne service_command_not_found
         iny
         inx
         cmp #13
         bne service_command_rom_loop
+        beq service_command_default_delay
 
+    service_command_read_delay:
+    lda #0
+    sta animation_timer
+    service_command_read_delay_loop:
+        lda ($f2),y
+        iny
+        cmp #13
+        beq service_command_set_delay
+        cmp #32
+        beq service_command_read_delay_loop
+        cmp #48
+        bcc service_command_not_found
+        cmp #58
+        bcs service_command_not_found
+        sec
+        sbc #48     ; ASCII code - 48 ('0') -> 0-9
+        clc
+        sta $70     ; new digit
+
+        asl animation_timer ; old total (n) -> n * 2
+        lda animation_timer
+        asl
+        asl                 ; n * 8
+        adc animation_timer ; n * 10
+        adc $70             ; old total + new digit
+
+        ; If the delay is too large then just use the default delay.
+        bcs service_command_default_delay
+        sta animation_timer
+
+        bcc service_command_read_delay_loop
+
+    service_command_default_delay:
+    lda #initial_animation_timer
+    sta animation_timer
+
+    service_command_set_delay:
     jsr main_mgc_code
+
     pla
     tax
     pla
     tay
     ;lda #0
-
+    ;rts
     jmp exit_to_basic_with_f8
 
     service_command_not_found:
@@ -487,9 +528,6 @@ enter_mgc_code:
     sta animation_value0
     lda palette_fe09,x
     sta animation_value1
-
-    lda #initial_animation_timer
-    sta animation_timer
 
     ; Clear the vsync interrupt bit.
 
@@ -897,12 +935,19 @@ exit_to_basic_with_f8:
 
     cli
 
+    ldx #<key8_text
+    ldy #>key8_text
+    jsr $fff7       ; (OSCLI - KEY8 <command>|M)
+
     ldx #<basic_text
     ldy #>basic_text
     jmp $fff7       ; (OSCLI - BASIC)
 
 basic_text:
 .byte "BASIC", 13
+
+key8_text:
+.byte "KEY8 ", "PAGE=&1400|MOLD|MRUN|F|M", 13
 
 load_file:  ; Decompress the file at offset X (index X/2).
 

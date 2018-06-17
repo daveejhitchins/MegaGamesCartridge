@@ -9,9 +9,6 @@ jsr $fff4       ; (OSBYTE 8a - insert character into buffer)
 ldx #<key9_text
 ldy #>key9_text
 jsr $fff7       ; (OSCLI - KEY9 <command>|M)
-ldx #<key8_text
-ldy #>key8_text
-jsr $fff7       ; (OSCLI - KEY8 <command>|M)
 ldx #<basic_text
 ldy #>basic_text
 jmp $fff7       ; (OSCLI - BASIC)
@@ -20,5 +17,3 @@ basic_text:
 .byte "BASIC", 13
 key9_text:
 .byte "KEY9 ", "PAGE=&1400:CHAIN", 34, "BOOT", 34, "|M", 13
-key8_text:
-.byte "KEY8 ", "PAGE=&1400|MOLD|MRUN|F|M", 13
