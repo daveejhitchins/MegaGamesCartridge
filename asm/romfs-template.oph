@@ -923,11 +923,11 @@ exit_to_basic_with_f8:
     ldy #$88        ; (fn key 8)
     jsr $fff4       ; (OSBYTE 8a - insert character into buffer)
 
-    sei
-
     ; Due to the way the decompression routine uses the stack we need to wrap
     ; calls to it in subroutines (implicitly pushing the return address onto
     ; the stack) and jump into it directly.
+    sei
+
     ldx #4
     jsr load_file
     ldx #6
