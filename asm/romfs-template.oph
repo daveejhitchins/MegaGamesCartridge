@@ -478,7 +478,7 @@ enter_mgc_code:
     sei
 
     jsr show_message
-    ldx #2
+    ldx #2              ; Load the file at index 1 (TITLE).
     jsr load_file
 
     lda #$c0            ; 0x3780 >> 1 (0x3000 + 3*0x280)
@@ -903,9 +903,9 @@ exit_to_basic_with_f8:
     ; the stack) and jump into it directly.
     sei
 
-    ldx #4
+    ldx #4              ; Load the file at index 2 (TITLE).
     jsr load_file
-    ldx #6
+    ldx #6              ; Load the file at index 3 (TITLE).
     jsr load_file
 
     cli
