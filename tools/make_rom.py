@@ -623,7 +623,8 @@ def convert_files(files, decomp_addrs, data_address, header_file, details, rom_f
     if os.system("ophis -o " + commands.mkarg(rom_file) + " " + commands.mkarg(temp_file)) != 0:
         sys.exit(1)
     
-    os.remove(temp_file)
+    #os.remove(temp_file)
+    print temp_file
     
     print "Created", rom_file
 

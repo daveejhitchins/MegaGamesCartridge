@@ -160,8 +160,6 @@ service_command:
     tax
     pla
     tay
-    ;lda #0
-    ;rts
     jmp exit_to_basic_with_f8
 
     service_command_not_found:
@@ -893,36 +891,18 @@ exit_to_basic_with_f8:
     ldx #1
     jsr $fff4
 
-    lda #$8a
-    ldx #0          ; (keyboard buffer)
-    ldy #$88        ; (fn key 8)
-    jsr $fff4       ; (OSBYTE 8a - insert character into buffer)
-
     ; Due to the way the decompression routine uses the stack we need to wrap
     ; calls to it in subroutines (implicitly pushing the return address onto
     ; the stack) and jump into it directly.
     sei
 
-    ldx #4              ; Load the file at index 2 (TITLE).
-    jsr load_file
-    ldx #6              ; Load the file at index 3 (TITLE).
+    ldx #4              ; Load the file at index 2 (FASTD).
     jsr load_file
 
     cli
 
-    ldx #<key8_text
-    ldy #>key8_text
-    jsr $fff7       ; (OSCLI - KEY8 <command>|M)
-
-    ldx #<basic_text
-    ldy #>basic_text
-    jmp $fff7       ; (OSCLI - BASIC)
-
-basic_text:
-.byte "BASIC", 13
-
-key8_text:
-.byte "KEY8 ", "PAGE=&1400|MOLD|MRUN|F|M", 13
+    lda #0
+    rts
 
 load_file:  ; Decompress the file at offset X (index X/2).
 
