@@ -2,16 +2,16 @@
 
 .org $0e00
 
-_0e00: sta $1200
-_0e03: sty $1201
-_0e06: sty $1203
-_0e09: stx $1202
-_0e0c: jsr $115e
-_0e0f: jsr $116b
-_0e12: lda $1200
+_0e00: sta _1200
+_0e03: sty _1201
+_0e06: sty _1203
+_0e09: stx _1202
+_0e0c: jsr _115e
+_0e0f: jsr _116b
+_0e12: lda _1200
 _0e15: cmp #$02
-_0e17: bcc $0e1c
-_0e19: jmp $1013
+_0e17: bcc _0e1c
+_0e19: jmp _1013
 _0e1c: lda $0601
 _0e1f: sta $7a
 _0e21: lda $0602
@@ -36,8 +36,8 @@ _0e4e: lda $0610
 _0e51: sta $84
 _0e53: lda $0611
 _0e56: sta $85
-_0e58: lda $1200
-_0e5b: beq $0e71
+_0e58: lda _1200
+_0e5b: beq _0e71
 _0e5d: lda $060a
 _0e60: sta $86
 _0e62: lda $060b
@@ -54,23 +54,23 @@ _0e79: lda #$08
 _0e7b: sta $76
 _0e7d: lda #$00
 _0e7f: sta $77
-_0e81: jsr $0eb8
-_0e84: jsr $0f1e
-_0e87: lda $1200
-_0e8a: bne $0e8f
-_0e8c: jsr $0f78
+_0e81: jsr _0eb8
+_0e84: jsr _0f1e
+_0e87: lda _1200
+_0e8a: bne _0e8f
+_0e8c: jsr _0f78
 _0e8f: ldy #$00
 _0e91: lda ($7c),y
 _0e93: clc
 _0e94: adc #$01
 _0e96: sta ($7c),y
 _0e98: cmp ($82),y
-_0e9a: beq $0ea3
+_0e9a: beq _0ea3
 _0e9c: lda ($7e),y
-_0e9e: beq $0ea3
-_0ea0: jmp $0e81
-_0ea3: lda $115d
-_0ea6: bne $0eb0
+_0e9e: beq _0ea3
+_0ea0: jmp _0e81
+_0ea3: lda _115d
+_0ea6: bne _0eb0
 _0ea8: lda #$0b
 _0eaa: sta $f4
 _0eac: sta $fe05
@@ -81,9 +81,9 @@ _0eb4: sta $fe30
 _0eb7: rts
 _0eb8: ldy #$00
 _0eba: lda ($7c),y
-_0ebc: bne $0ecf
+_0ebc: bne _0ecf
 _0ebe: lda #$41
-_0ec0: sta $0fa7
+_0ec0: sta _0fa7
 _0ec3: lda #$f0
 _0ec5: sta $72
 _0ec7: sta $74
@@ -91,34 +91,34 @@ _0ec9: lda #$47
 _0ecb: sta $73
 _0ecd: sta $75
 _0ecf: lda #$a7
-_0ed1: sta $0fd1
+_0ed1: sta _0fd1
 _0ed4: lda #$0f
-_0ed6: sta $0fd2
+_0ed6: sta _0fd2
 _0ed9: ldx #$02
-_0edb: jsr $0fa9
-_0ede: inc $0fa7
-_0ee1: ldy $1200
-_0ee4: bne $0ef6
+_0edb: jsr _0fa9
+_0ede: inc _0fa7
+_0ee1: ldy _1200
+_0ee4: bne _0ef6
 _0ee6: ldy #$00
 _0ee8: lda ($7a),y
-_0eea: sta $0fd1
+_0eea: sta _0fd1
 _0eed: iny
 _0eee: lda ($7a),y
-_0ef0: sta $0fd2
-_0ef3: jmp $0f0a
+_0ef0: sta _0fd2
+_0ef3: jmp _0f0a
 _0ef6: ldy #$00
 _0ef8: lda ($8e),y
-_0efa: beq $0efe
+_0efa: beq _0efe
 _0efc: asl
 _0efd: asl
 _0efe: tay
 _0eff: lda ($86),y
-_0f01: sta $0fd1
+_0f01: sta _0fd1
 _0f04: iny
 _0f05: lda ($86),y
-_0f07: sta $0fd2
-_0f0a: ldx $1201
-_0f0d: jsr $0fb1
+_0f07: sta _0fd2
+_0f0a: ldx _1201
+_0f0d: jsr _0fb1
 _0f10: clc
 _0f11: lda $78
 _0f13: adc $72
@@ -129,15 +129,15 @@ _0f1b: sta $73
 _0f1d: rts
 _0f1e: ldy #$00
 _0f20: lda ($7e),y
-_0f22: bne $0f27
-_0f24: jmp $0f6e
+_0f22: bne _0f27
+_0f24: jmp _0f6e
 _0f27: ldy #$00
 _0f29: lda ($7c),y
-_0f2b: beq $0f2f
+_0f2b: beq _0f2f
 _0f2d: asl
 _0f2e: asl
-_0f2f: ldy $1200
-_0f32: bne $0f4e
+_0f2f: ldy _1200
+_0f32: bne _0f4e
 _0f34: pha
 _0f35: ldy #$00
 _0f37: lda ($7a),y
@@ -155,7 +155,7 @@ _0f46: tay
 _0f47: iny
 _0f48: txa
 _0f49: sta ($84),y
-_0f4b: jmp $0f6e
+_0f4b: jmp _0f6e
 _0f4e: pha
 _0f4f: ldy #$00
 _0f51: lda ($86),y
@@ -211,33 +211,37 @@ _0fa2: lda $8b
 _0fa4: sta ($7a),y
 _0fa6: rts
 _0fa7: .byte 0
-_0fa8: jsr $72a5
+_0fa8: .byte $20
+_0fa9: .byte $a5
+_0faa: .byte $72
 _0fab: sta $74
 _0fad: lda $73
 _0faf: sta $75
-_0fb1: lda $115d
-_0fb4: bne $0fc8
+_0fb1: lda _115d
+_0fb4: bne _0fc8
 _0fb6: lda #$0c
 _0fb8: sta $f4
 _0fba: sta $fe05
-_0fbd: lda $1202
+_0fbd: lda _1202
 _0fc0: sta $f4
 _0fc2: sta $fe05
-_0fc5: jmp $0fd0
-_0fc8: lda $1202
+_0fc5: jmp _0fd0
+_0fc8: lda _1202
 _0fcb: sta $f4
 _0fcd: sta $fe30
-_0fd0: ldy $ffff
+_0fd0: .byte $ac
+_0fd1: .byte $ff
+_0fd2: .byte $ff
 _0fd3: cpy #$20
-_0fd5: bcc $0ffa
+_0fd5: bcc _0ffa
 _0fd7: cpy #$ff
-_0fd9: beq $0ffa
-_0fdb: lda $1200,y
+_0fd9: beq _0ffa
+_0fdb: lda _1200,y
 _0fde: sta $70
-_0fe0: lda $1300,y
+_0fe0: lda _1300,y
 _0fe3: sta $71
-_0fe5: lda $115d
-_0fe8: beq $0ff1
+_0fe5: lda _115d
+_0fe8: beq _0ff1
 _0fea: lda #$8f
 _0fec: sta $f4
 _0fee: sta $fe30
@@ -245,10 +249,10 @@ _0ff1: ldy #$07
 _0ff3: lda ($70),y
 _0ff5: sta ($74),y
 _0ff7: dey
-_0ff8: bpl $0ff3
-_0ffa: inc $0fd1
-_0ffd: bne $1002
-_0fff: inc $0fd2
+_0ff8: bpl _0ff3
+_0ffa: inc _0fd1
+_0ffd: bne _1002
+_0fff: inc _0fd2
 _1002: clc
 _1003: lda $76
 _1005: adc $74
@@ -257,7 +261,7 @@ _1009: lda $77
 _100b: adc $75
 _100d: sta $75
 _100f: dex
-_1010: bne $0fb1
+_1010: bne _0fb1
 _1012: rts
 _1013: lda $0601
 _1016: sta $7a
@@ -279,7 +283,7 @@ _103b: lda $0610
 _103e: sta $7c
 _1040: lda $0611
 _1043: sta $7d
-_1045: jsr $115e
+_1045: jsr _115e
 _1048: ldy #$00
 _104a: lda ($7a),y
 _104c: sta $8a
@@ -290,69 +294,74 @@ _1053: ldy #$00
 _1055: lda ($7c),y
 _1057: sta $8c
 _1059: sty $8d
-_105b: lda $115d
-_105e: bne $1072
+_105b: lda _115d
+_105e: bne _1072
 _1060: lda #$0c
 _1062: sta $f4
 _1064: sta $fe05
-_1067: lda $1202
+_1067: lda _1202
 _106a: sta $f4
 _106c: sta $fe05
-_106f: jmp $107a
-_1072: lda $1202
+_106f: jmp _107a
+_1072: lda _1202
 _1075: sta $f4
 _1077: sta $fe30
-_107a: lda $1203
-_107d: sta $10f6
-_1080: sta $110a
-_1083: sta $1112
-_1086: sta $113b
-_1089: lda $1200
+_107a: lda _1203
+_107d: sta _10f6
+_1080: sta _110a
+_1083: sta _1112
+_1086: sta _113b
+_1089: lda _1200
 _108c: cmp #$02
-_108e: bne $10a0
+_108e: bne _10a0
 _1090: lda #$e5
-_1092: sta $10c5
+_1092: sta _10c5
 _1095: lda #$10
-_1097: sta $10c6
-_109a: jsr $10c4
-_109d: jmp $10c1
+_1097: sta _10c6
+_109a: jsr _10c4
+_109d: jmp _10c1
 _10a0: cmp #$03
-_10a2: bne $10b4
+_10a2: bne _10b4
 _10a4: lda #$f8
-_10a6: sta $10c5
+_10a6: sta _10c5
 _10a9: lda #$10
-_10ab: sta $10c6
-_10ae: jsr $10c4
-_10b1: jmp $10c1
+_10ab: sta _10c6
+_10ae: jsr _10c4
+_10b1: jmp _10c1
 _10b4: lda #$14
-_10b6: sta $10c5
+_10b6: sta _10c5
 _10b9: lda #$11
-_10bb: sta $10c6
-_10be: jsr $10c4
-_10c1: jmp $0ea3
-_10c4: jsr $ffff
-_10c7: bne $10d5
-_10c9: jsr $113d
+_10bb: sta _10c6
+_10be: jsr _10c4
+_10c1: jmp _0ea3
+_10c4: .byte $20
+_10c5: .byte $ff
+_10c6: .byte $ff
+_10c7: bne _10d5
+_10c9: jsr _113d
 _10cc: ldy #$00
 _10ce: lda ($74),y
 _10d0: clc
 _10d1: adc #$01
 _10d3: sta ($74),y
-_10d5: jsr $0f78
-_10d8: jsr $0f6e
+_10d5: jsr _0f78
+_10d8: jsr _0f6e
 _10db: ldy #$00
 _10dd: lda ($7e),y
-_10df: beq $10e4
-_10e1: jmp $10c4
+_10df: beq _10e4
+_10e1: jmp _10c4
 _10e4: rts
 _10e5: ldy #$00
 _10e7: lda ($7a),y
-_10e9: sta $10f3
+_10e9: sta _10f3
 _10ec: iny
 _10ed: lda ($7a),y
-_10ef: sta $10f4
-_10f2: lda $ffff
-_10f5: cmp #$ff
+_10ef: sta _10f4
+_10f2: .byte $ad
+_10f3: .byte $ff
+_10f4: .byte $ff
+_10f5: .byte $c9
+_10f6: .byte $ff
 _10f7: rts
 _10f8: clc
 _10f9: lda $8c
@@ -363,11 +372,13 @@ _1101: adc $8b
 _1103: sta $79
 _1105: ldy #$00
 _1107: lda ($78),y
-_1109: cmp #$ff
-_110b: beq $1113
+_1109: .byte $c9
+_110a: .byte $ff
+_110b: beq _1113
 _110d: ldy #$01
 _110f: lda ($78),y
-_1111: cmp #$ff
+_1111: .byte $c9
+_1112: .byte $ff
 _1113: rts
 _1114: clc
 _1115: lda $8c
@@ -389,11 +400,12 @@ _1132: adc $79
 _1134: sta $79
 _1136: ldy #$00
 _1138: lda ($78),y
-_113a: cmp #$ff
+_113a: .byte $c9
+_113b: .byte $ff
 _113c: rts
 _113d: ldy #$00
 _113f: lda ($74),y
-_1141: beq $1145
+_1141: beq _1145
 _1143: asl
 _1144: asl
 _1145: pha
@@ -418,36 +430,38 @@ _115d: .byte 0
 _115e: lda #$00
 _1160: ldx #$01
 _1162: jsr $fff4
-_1165: stx $115d
+_1165: stx _115d
 _1168: rts
 _1169: .byte 0
 _116a: .byte 0
-_116b: lda $1169
-_116e: bne $11a9
+_116b: lda _1169
+_116e: bne _11a9
 _1170: lda #$20
-_1172: sta $1191
+_1172: sta _1191
 _1175: lda #$13
-_1177: sta $1192
-_117a: lda $115d
-_117d: bne $1184
+_1177: sta _1192
+_117a: lda _115d
+_117d: bne _1184
 _117f: lda #$c0
-_1181: jmp $1186
+_1181: jmp _1186
 _1184: lda #$89
-_1186: sta $116a
+_1186: sta _116a
 _1189: ldx #$02
-_118b: lda $116a
+_118b: lda _116a
 _118e: ldy #$1f
-_1190: sta $ffff
-_1193: inc $1191
-_1196: bne $119b
-_1198: inc $1192
+_1190: .byte $8d
+_1191: .byte $ff
+_1192: .byte $ff
+_1193: inc _1191
+_1196: bne _119b
+_1198: inc _1192
 _119b: dey
-_119c: bpl $1190
-_119e: inc $116a
+_119c: bpl _1190
+_119e: inc _116a
 _11a1: dex
-_11a2: bpl $118b
+_11a2: bpl _118b
 _11a4: lda #$01
-_11a6: sta $1169
+_11a6: sta _1169
 _11a9: rts
 _11aa:
 .byte 0,0,0,0,0,0
@@ -457,7 +471,14 @@ _11b0:
 .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+_1200:
+.byte 0
+_1201:
+.byte 0
+_1202:
+.byte 0
+_1203:
+.byte 0,0,0,0,0,0,0,0,0,0,0,0,0
 .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 _1220:
 .byte $00,$08,$10,$18,$20,$28,$30,$38,$40,$48,$50,$58,$60,$68,$70,$78
