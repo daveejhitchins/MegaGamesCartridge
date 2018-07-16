@@ -684,7 +684,7 @@ if __name__ == "__main__":
         }
     
     files = ["BOOT1", "TITLE", "FASTD", "MENU"]
-    decomp_addrs = [0x1400, 0x2e00, 0xe00, 0x1400]
+    decomp_addrs = ["-", 0x2e00, "-", "-"]
     rom_file = "build/MENU.ROM"
     
     header_template = open("asm/romfs-template.oph").read()
