@@ -2,6 +2,8 @@
 
 set -e
 
+# This tool requires that UEFtrans.py, SSD2UEF.py and elkulator are on the PATH.
+
 tools/prepare_boot.py
 tools/prepare_menu.py
 
@@ -15,6 +17,7 @@ echo "*TAPE"
 echo "*EXEC BOOT1"
 echo "*DISK"
 echo 'SAVE "BOOT1"'
+echo "NEW"
 echo "*TAPE"
 echo "*EXEC MENU"
 echo "*DISK"

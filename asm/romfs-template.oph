@@ -203,8 +203,57 @@ trigger_check:
         dex
         lda triggers,x                  ; Compare the low byte of the ROM
         cmp exported_rom_pointer_low    ; pointer to the current trigger.
+        bne trigger_check_base
+
+        ; Compare the file name being searched for with the one in the block
+        ; just loaded. If the search file name is just a null byte then go ahead
+        ; and decompress the data anyway.
+        lda $3d2
         beq trigger_start_decompression
 
+        txa
+        pha
+
+        ldx #0
+        trigger_check_file_name_loop:
+            lda $3b2,x
+            sta trigger_offset  ; Store the original char in an unused location.
+            cmp #$61
+            bcc trigger_check_file_name_check_case  ; < 'a'
+            cmp #$7b
+            bcs trigger_check_file_name_check_case  ; > 'z'
+
+            and #$df            ; Convert the char to upper case and store it
+            sta trigger_offset  ; in a location that isn't being used.
+
+            trigger_check_file_name_check_case:
+            lda $3d2,x
+            cmp #$61
+            bcc trigger_check_file_name_check_char  ; < 'a'
+            cmp #$7b
+            bcs trigger_check_file_name_check_char  ; > 'z'
+
+            and #$df            ; Convert the char to upper case and store it
+
+            trigger_check_file_name_check_char:
+            cmp trigger_offset
+            bne trigger_check_file_name_differs
+            cmp #0
+            beq trigger_check_file_name_matches
+            inx
+            cpx #11
+            bne trigger_check_file_name_loop
+
+        trigger_check_file_name_matches:
+        pla
+        tax
+        jmp trigger_start_decompression
+
+        trigger_check_file_name_differs:
+        pla
+        tax
+
+        trigger_check_base:
         cpx #0                          ; If not at the base of the array then
         bne trigger_check_loop          ; loop again.
         beq trigger_exit                ; Otherwise exit.
@@ -463,19 +512,22 @@ copy_decompressed:  ; X=number of bytes to copy
 
 main_mgc_code:
 
+    jsr show_message    ; Change to MODE 1 and hide the text cursor regardless
+                        ; of whether we show the title to clear screen memory.
+
     lda #$fd
     ldx #0
     ldy #255
     jsr $fff4
     cpx #1              ; power up?
     beq enter_mgc_code
+
     rts
 
 enter_mgc_code:
 
     sei
 
-    jsr show_message
     ldx #2              ; Load the file at index 1 (TITLE).
     jsr load_file
 
@@ -877,8 +929,14 @@ text_end:
 
 exit_to_basic_with_f8:
 
-    ; Exit to MODE 6.
-    lda #22
+    lda #$ff        ; Blank the palette.
+    sta $fe08
+    sta $fe09
+
+    lda #12         ; CLS
+    jsr $ffee
+
+    lda #22         ; Exit to MODE 6.
     jsr $ffee
     lda #6
     jsr $ffee
@@ -899,10 +957,29 @@ exit_to_basic_with_f8:
     ldx #4              ; Load the file at index 2 (FASTD).
     jsr load_file
 
+    ldx #6              ; Load the file at index 3 (MENU).
+    jsr load_file
+
     cli
 
-    lda #0
-    rts
+    lda #$8a
+    ldx #0          ; (keyboard buffer)
+    ldy #$88        ; (fn key 8)
+    jsr $fff4       ; (OSBYTE 8a - insert character into buffer)
+
+    ldx #<key8_text
+    ldy #>key8_text
+    jsr $fff7       ; (OSCLI - KEY8 <command>|M)
+
+    ldx #<basic_text
+    ldy #>basic_text
+    jmp $fff7       ; (OSCLI - BASIC)
+
+basic_text:
+.byte "BASIC", 13
+
+key8_text:
+.byte "KEY8 ", "!&E00=&8C12008D:PAGE=&1400|MOLD|MRUN|F|M", 13
 
 load_file:  ; Decompress the file at offset X (index X/2).
 
