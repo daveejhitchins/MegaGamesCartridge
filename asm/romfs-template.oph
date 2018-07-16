@@ -548,9 +548,6 @@ copy_decompressed:  ; X=number of bytes to copy
 
 main_mgc_code:
 
-    jsr show_message    ; Change to MODE 1 and hide the text cursor regardless
-                        ; of whether we show the title to clear screen memory.
-
     lda #$fd
     ldx #0
     ldy #255
@@ -563,6 +560,8 @@ main_mgc_code:
 enter_mgc_code:
 
     sei
+
+    jsr show_message    ; Change to MODE 1 and hide the text cursor.
 
     ldx #2              ; Load the file at index 1 (TITLE).
     jsr load_file
@@ -823,6 +822,21 @@ main_loop:
 
 end_loop:
 
+    lda #$ff        ; Blank the palette.
+    sta $fe08
+    sta $fe09
+
+    lda #12         ; CLS
+    jsr $ffee
+
+    ldx #0
+    mode6_print_loop:
+        lda mode6,x
+        jsr $ffee
+        inx
+        cpx #[mode6_end - mode6]
+        bne mode6_print_loop
+
     cli
     rts
 
@@ -956,27 +970,12 @@ cursor_off:
 .byte 23,1,0,0,0,0,0,0,0,0
 text_end:
 
+mode6:
+.byte 22,6
+.byte 23,1,0,0,0,0,0,0,0,0
+mode6_end:
+
 exit_to_basic_with_f8:
-
-    lda #$ff        ; Blank the palette.
-    sta $fe08
-    sta $fe09
-
-    lda #12         ; CLS
-    jsr $ffee
-
-    lda #22         ; Exit to MODE 6.
-    jsr $ffee
-    lda #6
-    jsr $ffee
-
-    lda #$ff        ; Blank the palette.
-    sta $fe08
-    sta $fe09
-
-    lda #15         ; Clear the input buffer.
-    ldx #1
-    jsr $fff4
 
     ; Due to the way the decompression routine uses the stack we need to wrap
     ; calls to it in subroutines (implicitly pushing the return address onto
@@ -991,6 +990,10 @@ exit_to_basic_with_f8:
 
     cli
 
+    lda #15         ; Clear the input buffer.
+    ldx #1
+    jsr $fff4
+
     lda #$8a
     ldx #0          ; (keyboard buffer)
     ldy #$88        ; (fn key 8)
@@ -1000,6 +1003,10 @@ exit_to_basic_with_f8:
     ldy #>key8_text
     jsr $fff7       ; (OSCLI - KEY8 <command>|M)
 
+    lda #$ff        ; Blank the palette.
+    sta $fe08
+    sta $fe09
+
     ldx #<basic_text
     ldy #>basic_text
     jmp $fff7       ; (OSCLI - BASIC)
@@ -1008,7 +1015,7 @@ basic_text:
 .byte "BASIC", 13
 
 key8_text:
-.byte "KEY8 ", "!&E00=&8C12008D:PAGE=&1400|MOLD|MRUN|F|M", 13
+.byte "KEY8 ", "|Q0!&E00=&8C12008D:PAGE=&1400|MOLD|MRUN|L|M", 13
 
 load_file:  ; Decompress the file at offset X (index X/2).
 
