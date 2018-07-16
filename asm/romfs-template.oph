@@ -312,6 +312,42 @@ decompress: ; src=compressed data, dest=destination start
             ; trigger offset=index into compressed entries
 
     ldy #0
+
+    ldx trigger_offset
+    lda offset_bits_and_count_masks,x
+    cmp #$ff                            ; Check for an invalid count mask and
+    bne decompress_start                ; decompress the data if not found.
+
+    ; Uncompressed data copy
+
+    decompress_raw_data_loop:
+        lda (src),y
+        sta (dest),y
+
+        inc src_low
+        bne decompress_raw_data_loop0
+        inc src_high
+
+        decompress_raw_data_loop0:
+        inc dest_low
+        bne decompress_raw_data_loop1
+        inc dest_high
+
+        decompress_raw_data_loop1:
+        ldx trigger_offset
+        lda dest_low
+        cmp dest_end_addresses,x
+        bne decompress_raw_data_loop
+        inx
+        lda dest_high
+        cmp dest_end_addresses,x
+        bne decompress_raw_data_loop
+
+        clc
+        rts
+
+    decompress_start:
+
     lda (src),y                     ; data[i]
     sta special
 
@@ -685,7 +721,7 @@ main_loop:
     bcc scroll_down
 
     jsr animate_title               ; If scrolling has finished then animate
-    jmp check_keys                  ; the title and check the keys as usual.
+    jmp count_down                  ; the title and count down to exiting.
 
     scroll_down:
     clc
@@ -754,20 +790,13 @@ main_loop:
 
     inc palette_offset  ; Only increase the palette offset once the full
     inc palette_offset  ; scrolling area is visible. This is designed to
-    jmp check_keys      ; occur when the top of the visible area has stopped
+    jmp count_down      ; occur when the top of the visible area has stopped
                         ; moving.
     add_visible_lines:
     adc #2
     sta visible_palette_lines
 
-    check_keys:
-
-    lda #121
-    ldx #0
-    jsr $fff4
-
-    cpx #$ff
-    bne end_loop
+    count_down:
 
     lda animation_timer
     cmp #0

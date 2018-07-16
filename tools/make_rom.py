@@ -365,21 +365,27 @@ def convert_files(files, decomp_addrs, data_address, header_file, details, rom_f
                 
                 # Compress the raw data.
                 compression_results = []
+                encoded_raw_data = map(ord, raw_data)
                 
-                for compress_offset_bits in range(3, 8):
-                    cdata = "".join(map(chr, compress(map(ord, raw_data),
-                        offset_bits = compress_offset_bits)))
+                if decomp_addr == "-":
+                    cdata, compress_offset_bits = raw_data, 0
+                    print "Encoded %s (%i bytes) at $%x." % (repr(name)[1:-1],
+                        len(raw_data), load)
+                else:
+                    for compress_offset_bits in range(3, 8):
+                        cdata = "".join(map(chr, compress(encoded_raw_data,
+                            offset_bits = compress_offset_bits)))
+                        
+                        l = len(cdata)
+                        if compression_results and l > compression_results[0][0]:
+                            break
+                        
+                        compression_results.append((l, cdata, compress_offset_bits))
                     
-                    l = len(cdata)
-                    if compression_results and l > compression_results[0][0]:
-                        break
-                    
-                    compression_results.append((l, cdata, compress_offset_bits))
-                
-                compression_results.sort()
-                cdata, compress_offset_bits = compression_results[0][1:]
-                print "Compressed %s from %i to %i bytes with %i-bit offset at $%x." % (repr(name)[1:-1],
-                    len(raw_data), len(cdata), compress_offset_bits, load)
+                    compression_results.sort()
+                    cdata, compress_offset_bits = compression_results[0][1:]
+                    print "Compressed %s from %i to %i bytes with %i-bit offset at $%x." % (repr(name)[1:-1],
+                        len(raw_data), len(cdata), compress_offset_bits, load)
                 
                 # Calculate the space between the end of the ROM and the
                 # current address, leaving room for an end of ROM marker.
@@ -566,6 +572,10 @@ def convert_files(files, decomp_addrs, data_address, header_file, details, rom_f
             if decomp_addr != "x":
             
                 addr = triggers.pop(0)
+                
+                if decomp_addr == "-":
+                    decomp_addr = block_info.info.load
+                
                 decomp_addr = decomp_addr & 0xffff
                 addresses.append(AddressInfo(name, addr, src_label, decomp_addr,
                     decomp_addr + block_info.raw_length, block_info.offset_bits))
