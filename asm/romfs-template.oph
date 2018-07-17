@@ -154,16 +154,20 @@ service_command:
     sta animation_timer
 
     service_command_set_delay:
+    lda #$fd
+    ldx #0
+    ldy #255
+    jsr $fff4
+    cpx #1              ; power up?
+    bne skip_mgc_code
+
     jsr main_mgc_code
 
+    skip_mgc_code:
     pla
     tax
     pla
     tay
-
-    lda #$ff        ; Blank the palette.
-    sta $fe08
-    sta $fe09
 
     lda #0
     rts
@@ -554,17 +558,6 @@ copy_decompressed:  ; X=number of bytes to copy
 
 main_mgc_code:
 
-    lda #$fd
-    ldx #0
-    ldy #255
-    jsr $fff4
-    cpx #1              ; power up?
-    beq enter_mgc_code
-
-    rts
-
-enter_mgc_code:
-
     sei
 
     jsr show_message    ; Change to MODE 1 and hide the text cursor.
@@ -842,6 +835,10 @@ end_loop:
         inx
         cpx #[mode6_end - mode6]
         bne mode6_print_loop
+
+    lda #$ff        ; Blank the palette.
+    sta $fe08
+    sta $fe09
 
     cli
     rts
