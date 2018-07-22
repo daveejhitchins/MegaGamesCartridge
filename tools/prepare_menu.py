@@ -10,15 +10,23 @@ numbers = {}
 non_appendable = set()
 variables = set()
 procedures = set()
+removed_procedures = set()
 int_r = re.compile(r"(([A-Z][a-z]+[0-9]?)+)%")
 str_r = re.compile(r"(([A-Z][a-z]+[0-9]?)+)\$")
-proc_r = re.compile(r"(PROC([A-Z][a-z]+)+)")
+proc_r = re.compile(r"(PROC([A-Za-z]+)+)")
+hspace_r = re.compile(r'("[^"]+")')
+assign_r = re.compile(r'[A-Za-z]+[%$]=(([0-9]+)|("[^"]+"))')
 
-space_tokens = ["IF", "THEN", "<", ">", "AND", "OR", r"\+", r"\-", "\*", ":",
-                "DEF", "PROC", "FN", "DIV", "MOD"]
+space_tokens = ["IF", "THEN", "ELSE", "<", ">", "AND", "OR", r"\+", r"\-",
+                "\*", ":", "DEF", "PROC", "FN", "DIV", "MOD", "TAB"]
 space_r = []
 for token in space_tokens:
     space_r.append((re.compile(r"( *" + token + " *)"), token))
+
+par_tokens = ["SPC", r"CHR\$"]
+par_r = []
+for token in par_tokens:
+    par_r.append((re.compile(token + r'\(([0-9A-Za-z]+)\)'), token))
 
 control = ["FOR", "NEXT", "IF", "ELSE", "REPEAT", "UNTIL", "ENDPROC", "END",
            "*FX", "DIM", "DEF"]
@@ -51,6 +59,16 @@ def strip_line(line):
         while i < len(line):
             match = r.search(line, i)
             if not match: break
+            line = line[:match.start()] + repl + line[match.end():]
+            i = match.start() + len(repl)
+    
+    for r, token in par_r:
+        token = token.replace("\\", "")
+        i = 0
+        while i < len(line):
+            match = r.search(line, i)
+            if not match: break
+            repl = token + match.groups()[0]
             line = line[:match.start()] + repl + line[match.end():]
             i = match.start() + len(repl)
     
@@ -90,6 +108,7 @@ for line in old_lines:
     new_lines.append((number, line))
 
 n = 10
+can_extend = False
 
 for number, line in new_lines:
     
@@ -110,13 +129,38 @@ for number, line in new_lines:
     for match in proc_r.finditer(line):
         procedures.add(match.group())
     
+    old_line = line
     line = strip_line(line)
+    
+    if line == "END" and lines:
+        if lines[-1].startswith("DEFPROC") and ":" not in lines[-1]:
+            name = proc_r.search(lines[-1]).group()
+            print "Removing", name
+            removed_procedures.add(name)
+            lines.pop()
+            continue
+    
     for token in initial:
         if token in line:
             appendable = False
             break
     else:
         appendable = True
+    
+    match = assign_r.match(line)
+    assignment = match and match.span() == (0, len(line))
+    assembly = "\\" in old_line and not line.startswith(".")
+    
+    if assignment or assembly:
+        if can_extend:
+            combined = lines[-1] + ":" + line
+            if len(combined) < 240:
+                lines[-1] = combined
+                continue
+        
+        can_extend = True
+    else:
+        can_extend = False
     
     #if lines and appendable and number not in non_appendable:
     #    for token in control:
@@ -126,6 +170,8 @@ for number, line in new_lines:
     #        if len(combined) < 256:
     #            lines[-1] = combined
     #            continue
+    
+    line = line.replace("THEN", "")
     
     lines.append(line)
     
@@ -154,6 +200,9 @@ for name in variables:
 used = set()
 
 for name in procedures:
+    if name in removed_procedures:
+        continue
+    
     new_name = ""
     for c in name[4:]:
         new_name += c
@@ -196,7 +245,12 @@ for line in lines:
         l = ""
         i = 0
         for match in r.finditer(line):
-            l += line[i:match.start()] + replacements[match.group()]
+        
+            original = match.group()
+            if r == proc_r and original in removed_procedures:
+                l += line[i:match.start()]
+            else:
+                l += line[i:match.start()] + replacements[original]
             i = match.end()
         
         if i < len(line):
