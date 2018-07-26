@@ -6,16 +6,15 @@ text = open("Menu50M").read()
 f = open("MENU", "w")
 
 lines = []
-numbers = {}
 non_appendable = set()
 variables = set()
-procedures = set()
-removed_procedures = set()
+procedure_defs = {}
+procedure_calls = set()
 int_r = re.compile(r"(([A-Z][a-z]+[0-9]?)+)%")
 str_r = re.compile(r"(([A-Z][a-z]+[0-9]?)+)\$")
-proc_r = re.compile(r"(PROC([A-Za-z]+)+)")
+proc_r = re.compile(r"(DEF)?(PROC)(([A-Za-z]+)+)")
 hspace_r = re.compile(r'("[^"]+")')
-assign_r = re.compile(r'[A-Za-z]+[%$]=(([0-9]+)|("[^"]+"))')
+assign_r = re.compile(r'[A-Za-z0-9]+[%$]=(([A-Za-z0-9]+[%$])|([0-9]+)|("[^"]+"))(\+[0-9]+)?')
 
 space_tokens = ["IF", "THEN", "ELSE", "<", ">", "AND", "OR", r"\+", r"\-",
                 "\*", ":", "DEF", "PROC", "FN", "DIV", "MOD", "TAB"]
@@ -75,6 +74,8 @@ def strip_line(line):
     return line
 
 
+# Read the lines in the program, mapping line numbers to line contents and
+# recording which line numbers are referred to by GOTO and RESTORE statements.
 old_lines = text.split("\r")
 new_lines = []
 
@@ -107,17 +108,19 @@ for line in old_lines:
     
     new_lines.append((number, line))
 
+
+# Process the program, removing unnecessary characters, concatenating lines,
+# and mapping old line numbers to new ones.
 n = 10
 can_extend = False
+proc_name = None
+in_proc = None
 
 for number, line in new_lines:
     
     i = 0
     while line and line[i] in string.digits:
         i += 1
-    
-    # Map the old line number to the new one.
-    numbers[number] = n
     
     if line == ":---" or line.startswith("REM") or line == ":":
         continue
@@ -126,19 +129,25 @@ for number, line in new_lines:
         for match in r.finditer(line):
             variables.add(match.group())
     
-    for match in proc_r.finditer(line):
-        procedures.add(match.group())
-    
     old_line = line
     line = strip_line(line)
     
-    if line == "END" and lines:
-        if lines[-1].startswith("DEFPROC") and ":" not in lines[-1]:
-            name = proc_r.search(lines[-1]).group()
-            print "Removing", name
-            removed_procedures.add(name)
-            lines.pop()
-            continue
+    if line.startswith("END") and lines:
+        match = proc_r.search(lines[-1][1])
+        if match and match.group(1) == "DEF" and ":" not in lines[-1][1]:
+            print "PROC", match.group(3), "is empty."
+    
+    for match in proc_r.finditer(line):
+        proc_name = match.group(3)
+        if match.group(1) == "DEF":
+            procedure_defs[proc_name] = [number]
+            in_proc = proc_name
+        else:
+            procedure_calls.add(proc_name)
+    
+    if line.startswith("END") and in_proc in procedure_defs:
+        procedure_defs[in_proc].append(number)
+        in_proc = None
     
     for token in initial:
         if token in line:
@@ -153,9 +162,9 @@ for number, line in new_lines:
     
     if assignment or assembly:
         if can_extend:
-            combined = lines[-1] + ":" + line
+            combined = lines[-1][1] + ":" + line
             if len(combined) < 240:
-                lines[-1] = combined
+                lines[-1] = (lines[-1][0], combined)
                 continue
         
         can_extend = True
@@ -164,18 +173,17 @@ for number, line in new_lines:
     
     #if lines and appendable and number not in non_appendable:
     #    for token in control:
-    #        if token in lines[-1]: break
+    #        if token in lines[-1][1]: break
     #    else:
-    #        combined = lines[-1] + ":" + line
+    #        combined = lines[-1][1] + ":" + line
     #        if len(combined) < 256:
-    #            lines[-1] = combined
+    #            lines[-1] = (lines[-1][0], combined)
     #            continue
     
     line = line.replace("THEN", "")
     
-    lines.append(line)
-    
-    n += 10
+    lines.append((number, line))
+
 
 # Simplify variable names.
 used = set()
@@ -196,19 +204,22 @@ for name in variables:
     
     #print name, "->", replacements[name]
 
+# Remove used procedures from the definitions dictionary, leaving only unused
+# ones. Additionally, removed incomplete definitions.
+for name, span in procedure_defs.items():
+    if name in procedure_calls or len(span) == 1:
+        del procedure_defs[name]
+
 # Simplify procedure names.
 used = set()
 
-for name in procedures:
-    if name in removed_procedures:
-        continue
-    
+for name in procedure_calls:
     new_name = ""
-    for c in name[4:]:
+    for c in name:
         new_name += c
         if new_name not in used:
             used.add(new_name)
-            replacements[name] = "PROC" + new_name
+            replacements[name] = new_name
             break
     else:
         replacements[name] = name
@@ -216,8 +227,34 @@ for name in procedures:
     #print name, "->", replacements[name]
 
 
+# Collect the spans of unused procedures.
+removed_spans = map(lambda (k, v): (v, k), procedure_defs.items())
+removed_spans.sort()
+
+numbers = {}
+new_lines = []
 n = 10
-for line in lines:
+
+for number, line in lines:
+
+    # Map the old line number to the new one.
+    numbers[number] = n
+    
+    # Removed unused procedures.
+    if removed_spans:
+    
+        # Examine the first span.
+        (begin, end), proc_name = removed_spans[0]
+        if begin <= number <= end:
+            if number == end:
+                print "Removed", proc_name, removed_spans.pop(0)[0]
+            continue
+    
+    new_lines.append((n, line))
+    n += 10
+
+
+for number, line in new_lines:
 
     # Replace old line numbers used with GOTO and RESTORE statements.
     
@@ -246,11 +283,14 @@ for line in lines:
         i = 0
         for match in r.finditer(line):
         
-            original = match.group()
-            if r == proc_r and original in removed_procedures:
-                l += line[i:match.start()]
+            if r == proc_r:
+                if match.group(1):
+                    prefix = "DEFPROC"
+                else:
+                    prefix = "PROC"
+                l += line[i:match.start()] + prefix + replacements[match.group(3)]
             else:
-                l += line[i:match.start()] + replacements[original]
+                l += line[i:match.start()] + replacements[match.group()]
             i = match.end()
         
         if i < len(line):
@@ -258,8 +298,7 @@ for line in lines:
         
         line = l
     
-    f.write(str(n) + line + "\r")
-    n += 10
+    f.write(str(number) + line + "\r")
 
 length = f.tell()
 f.close()
