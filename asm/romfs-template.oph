@@ -828,18 +828,6 @@ end_loop:
     lda #12         ; CLS
     jsr $ffee
 
-    ldx #0
-    mode6_print_loop:
-        lda mode6,x
-        jsr $ffee
-        inx
-        cpx #[mode6_end - mode6]
-        bne mode6_print_loop
-
-    lda #$ff        ; Blank the palette.
-    sta $fe08
-    sta $fe09
-
     cli
     rts
 
@@ -972,11 +960,6 @@ text:
 cursor_off:
 .byte 23,1,0,0,0,0,0,0,0,0
 text_end:
-
-mode6:
-.byte 22,6
-.byte 23,1,0,0,0,0,0,0,0,0
-mode6_end:
 
 load_file:  ; Decompress the file at offset X (index X/2).
 
