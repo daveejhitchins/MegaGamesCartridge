@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, re, stat, string
+import os, re, stat, string, sys
 
 text = open("Menu50M").read()
 f = open("MENU", "w")
@@ -10,14 +10,15 @@ non_appendable = set()
 variables = set()
 procedure_defs = {}
 procedure_calls = set()
-int_r = re.compile(r"(([A-Z][a-z]+[0-9]?)+)%")
-str_r = re.compile(r"(([A-Z][a-z]+[0-9]?)+)\$")
+int_r = re.compile(r"(([A-Z][a-z]+[0-9]?)+%)|([A-Z]%)")
+str_r = re.compile(r"([A-Z][a-z]+[0-9]?)+\$")
 proc_r = re.compile(r"(DEF)?(PROC)(([A-Za-z]+)+)")
 hspace_r = re.compile(r'("[^"]+")')
-assign_r = re.compile(r'[A-Za-z0-9]+[%$]=(([A-Za-z0-9]+[%$])|([0-9]+)|("[^"]+"))(\+[0-9]+)?')
+assign_r = re.compile(r'[A-Za-z0-9]+[%$]=[&]?(([A-Za-z0-9]+[%$])|([0-9]+)|("[^"]+"))(\+[0-9]+)?')
 
 space_tokens = ["IF", "THEN", "ELSE", "<", ">", "AND", "OR", r"\+", r"\-",
-                "\*", ":", "DEF", "PROC", "FN", "DIV", "MOD", "TAB"]
+                "\*", ":", "DEF", "PROC", "FN", "DIV", "MOD", "TAB", "FOR",
+                "TO", "READ", "DIM"]
 space_r = []
 for token in space_tokens:
     space_r.append((re.compile(r"( *" + token + " *)"), token))
@@ -28,8 +29,8 @@ for token in par_tokens:
     par_r.append((re.compile(token + r'\(([0-9A-Za-z]+)\)'), token))
 
 control = ["FOR", "NEXT", "IF", "ELSE", "REPEAT", "UNTIL", "ENDPROC", "END",
-           "*FX", "DIM", "DEF"]
-initial = ["DEF", "DIM"]
+           "*FX", "DEF", "DATA"]
+initial = ["DEF"]
 
 def read_number(line, at):
 
@@ -117,7 +118,7 @@ proc_name = None
 in_proc = None
 
 for number, line in new_lines:
-    
+
     i = 0
     while line and line[i] in string.digits:
         i += 1
@@ -171,14 +172,17 @@ for number, line in new_lines:
     else:
         can_extend = False
     
-    #if lines and appendable and number not in non_appendable:
-    #    for token in control:
-    #        if token in lines[-1][1]: break
-    #    else:
-    #        combined = lines[-1][1] + ":" + line
-    #        if len(combined) < 256:
-    #            lines[-1] = (lines[-1][0], combined)
-    #            continue
+    if lines and appendable and number not in non_appendable:
+        for token in control:
+            if token in lines[-1][1]: break
+        else:
+            for token in control:
+                if token in line: break
+            else:
+                combined = lines[-1][1] + ":" + line
+                if len(combined) < 240:
+                    lines[-1] = (lines[-1][0], combined)
+                    continue
     
     line = line.replace("THEN", "")
     
@@ -191,18 +195,46 @@ replacements = {}
 variables = map(lambda x: (len(x), x), variables)
 variables = map(lambda x: x[1], sorted(variables))
 
+# Create sets containing single letter variable names.
+alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+free_int_vars = set(map(lambda v: v + "%", alphabet))
+free_str_vars = set(map(lambda v: v + "$", alphabet))
+print "Variables renamed:"
+
+# If any existing variable matches one in either of the free sets then remove
+# the variable name from the set.
 for name in variables:
-    new_name = ""
-    for c in name[:-1]:
-        new_name += c
-        if new_name not in used:
-            used.add(new_name)
-            replacements[name] = new_name + name[-1]
-            break
+    if name in free_int_vars:
+        free_int_vars.remove(name)
+    elif name in free_str_vars:
+        free_str_vars.remove(name)
+
+for name in variables:
+    if name[0] in used and name.endswith("%") and free_int_vars:
+        new_name = free_int_vars.pop()
+        used.add(new_name)
+        replacements[name] = new_name
+    elif name[0] in used and name.endswith("$") and free_str_vars:
+        new_name = free_str_vars.pop()
+        used.add(new_name)
+        replacements[name] = new_name
     else:
-        replacements[name] = name
+        new_name = ""
+        for c in name[:-1]:
+            new_name += c
+            if new_name not in used:
+                used.add(new_name)
+                replacements[name] = new_name + name[-1]
+                if len(new_name) == 1:
+                    if name[-1] == "%" and new_name in free_int_vars:
+                        free_int_vars.remove(new_name + "%")
+                    elif name[-1] == "$" and new_name in free_str_vars:
+                        free_str_vars.remove(new_name + "$")
+                break
+        else:
+            replacements[name] = name
     
-    #print name, "->", replacements[name]
+    print name, "->", replacements[name]
 
 # Remove used procedures from the definitions dictionary, leaving only unused
 # ones. Additionally, removed incomplete definitions.
@@ -212,19 +244,35 @@ for name, span in procedure_defs.items():
 
 # Simplify procedure names.
 used = set()
+# Create a set of single letter procedure names.
+free_procs = set(alphabet)
+print "\nProcedures renamed:"
+
+# If any existing procedure starts with a letter in the free set then remove
+# the letter from the set.
+for name in variables:
+    if name[0] in free_procs:
+        free_procs.remove(name[0])
 
 for name in procedure_calls:
-    new_name = ""
-    for c in name:
-        new_name += c
-        if new_name not in used:
-            used.add(new_name)
-            replacements[name] = new_name
-            break
+    if name[0] in used and free_procs:
+        new_name = free_procs.pop()
+        used.add(new_name)
+        replacements[name] = new_name
     else:
-        replacements[name] = name
+        new_name = ""
+        for c in name:
+            new_name += c
+            if new_name not in used:
+                used.add(new_name)
+                replacements[name] = new_name
+                if len(new_name) == 1 and new_name in free_procs:
+                    free_procs.remove(new_name)
+                break
+        else:
+            replacements[name] = name
     
-    #print name, "->", replacements[name]
+    print name, "->", replacements[name]
 
 
 # Collect the spans of unused procedures.
