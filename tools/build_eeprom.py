@@ -439,7 +439,7 @@ if __name__ == "__main__":
     idx = io.read()
     
     # Also write the index to a file.
-    ind.write("build/INDEX")
+    #ind.write("build/INDEX")
     
     # Create the output EEPROMs.
     f = open(output_files[0], "wb")
