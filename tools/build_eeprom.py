@@ -247,6 +247,16 @@ def make_entry(name, publisher, rom_files, genres, rest, page):
     return entry
 
 
+def expand_rom_files(rom_file, number_of_roms):
+
+    rom_files = [rom_file]
+    at = rom_file.rfind("1")
+    for i in range(1, number_of_roms):
+        rom_files.append("%s%i%s" % (rom_file[:at], i + 1, rom_file[at+1:]))
+    
+    return rom_files
+
+
 if __name__ == "__main__":
 
     args = sys.argv[:]
@@ -284,8 +294,22 @@ if __name__ == "__main__":
     # Collect single and double ROM sets.
     rom_sets = {1: [], 2: [], 3: []}
     
-    for line in open(choices).readlines():
+    # Split the input into lines using newlines then carriage returns.
+    choices_text = open(choices).read()
+    lines = choices_text.split("\n")
     
+    if len(lines) == 1:
+        lines = choices_text.split("\r")
+    
+    if lines and "Publisher" in lines[0]:
+        lines.pop(0)
+    
+    for line in lines:
+    
+        line = line.rstrip(",")
+        if not line:
+            continue
+        
         pieces = filter(lambda x: x, line.strip().split(","))
         
         name, publisher = pieces[:2]
@@ -293,16 +317,35 @@ if __name__ == "__main__":
         
         i = 2
         while i < len(pieces):
-            if pieces[i].endswith(".rom"):
+            if pieces[i].lower().endswith(".rom"):
                 rom_files.append(pieces[i])
                 i += 1
             else:
                 break
         
+        if len(rom_files) == 0:
+            continue
+        
         genres = pieces[i:i+2]
         rest = pieces[i+2:]
         
-        rom_sets[min(len(rom_files), 3)].append((name, publisher, rom_files, genres, rest))
+        if len(rest) <= 7:
+            # My own format - all entries are included
+            rom_sets[min(len(rom_files), 3)].append((name, publisher, rom_files, genres, rest))
+        
+        elif rest[7] != "0":
+            # MGC format - only include marked entries
+            number_of_roms = int(rest[6])
+            if number_of_roms > 2:
+                rom_files = expand_rom_files(rom_files[0], number_of_roms)
+            
+            rom_sets[min(len(rom_files), 3)].append((name, publisher, rom_files, genres, rest))
+    
+    if verbose:
+        print "%i single ROMs using %i banks." % (len(rom_sets[1]), len(rom_sets[1]))
+        print "%i pairs of ROMs using %i banks." % (len(rom_sets[2]), len(rom_sets[2])*2)
+        print "%i multi-ROMs using %i banks." % (len(rom_sets[3]),
+            sum(map(lambda x: len(x[2]), rom_sets[3])))
     
     # Assign ROM files to banks in the EEPROM.
     banks = {}
