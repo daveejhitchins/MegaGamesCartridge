@@ -448,19 +448,32 @@ if __name__ == "__main__":
     blank_rom = "\xff" * 16384
     i = 1
     unused = 0
+    sector_data = menu_rom
+    s = 0xa00
     
     while i < 256:
     
         if i == 128:
-            f.write(idx)
+            rom_data = idx
         
         elif i in banks:
-            rom = open(os.path.join(roms_dir, banks[i]), "rb").read()
-            f.write(rom)
+            rom_data = open(os.path.join(roms_dir, banks[i]), "rb").read()
         
         else:
             unused += 1
-            f.write(blank_rom)
+            rom_data = blank_rom
+        
+        f.write(rom_data)
+        
+        sector_data += rom_data
+        
+        # For the last ROM in a 64K sector, write a file for that sector.
+        if i % 4 == 3:
+            open("MGC%03X.DAT" % s, "wb").write(sector_data)
+            sector_data = ""
+            s += 1
+            if s == 0xa20:
+                s = 0xb00
         
         i += 1
     
