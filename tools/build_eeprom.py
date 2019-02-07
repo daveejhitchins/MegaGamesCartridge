@@ -458,6 +458,8 @@ if __name__ == "__main__":
         
         elif i in banks:
             rom_data = open(os.path.join(roms_dir, banks[i]), "rb").read()
+            if len(rom_data) < 16384:
+                rom_data += "\x00" * (16384 - len(rom_data))
         
         else:
             unused += 1
