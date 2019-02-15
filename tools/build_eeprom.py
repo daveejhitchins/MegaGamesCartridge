@@ -118,13 +118,17 @@ class Genre(Choice):
         "O": "Save 'em Up", "P": "Shooter",
         "Q": "Simulation", "R": "Space",
         "S": "Sport", "T": "Strategy",
-        "U": "Word Games", "V": "Traditional Games"
+        "U": "Word Games", "V": "Traditional Games",
+        "W": "Utilities", "Z": "Applications"
         }
     
     def __init__(self, key = None, fh = None):
     
         self.key = key
         Choice.__init__(self, self.choices.get(key, "N/A"), fh)
+    
+    def __str__(self):
+        return self.value
     
     def read(self, fh):
     
@@ -423,14 +427,39 @@ if __name__ == "__main__":
     ordered = entries.keys()
     ordered.sort()
     
+    games = 0
+    utilities = 0
+    applications = 0
+    
     for pair in ordered:
-        ind.entries.append(entries[pair])
+        entry = entries[pair]
+        ind.entries.append(entry)
+        
+        genres = map(str, [entry.genre1, entry.genre2])
+        
+        if "N/A" in genres:
+            genres.remove("N/A")
+        if "Utilities" in genres:
+            genres.remove("Utilities")
+            utilities += 1
+        if "Applications" in genres and len(genres) == 1:
+            # Applications must be the only valid genre, otherwise the other
+            # genre takes precedence.
+            genres.remove("Applications")
+            applications += 1
+        
+        if genres:
+            games += 1
     
     if verbose:
         ordered = banks.items()
         ordered.sort()
         for n, name in ordered:
             print n, name
+        
+        print "Games:", games
+        print "Utilities:", utilities
+        print "Applications:", applications
     
     # Write the index to a string.
     io = StringIO()
