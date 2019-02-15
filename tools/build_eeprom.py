@@ -25,9 +25,9 @@ class Index:
     def __init__(self):
     
         self.entries = []
-        self.menu_start = 0
-        self.menu_length = 0
-        self.space = 0
+        self.games = 0
+        self.utilities = 0
+        self.applications = 0
     
     def read(self, path):
     
@@ -35,13 +35,11 @@ class Index:
         if f.read(2) != "\x17\xa3":
             raise IOError("Not a Mega Games Cartridge index file: '%s'" % path)
         
-        total = ord(f.read(1))
-        self.menu_start = struct.unpack(">H", f.read(2))[0]
-        self.menu_length = struct.unpack(">H", f.read(2))[0]
-        self.space = ord(f.read(1))
+        totals = struct.unpack(">BBB", f.read(3))
+        f.seek(3)
         
         self.entries = []
-        while len(self.entries) < total:
+        while len(self.entries) < sum(totals):
         
             entry = Entry(fh = f)
             self.entries.append(entry)
@@ -55,10 +53,8 @@ class Index:
         
         fh.write("\x17\xa3")
         
-        fh.write(chr(len(self.entries)))
-        fh.write(struct.pack(">H", self.menu_start))
-        fh.write(struct.pack(">H", self.menu_length))
-        fh.write(chr(self.space))
+        fh.write(struct.pack(">BBB", self.games, self.utilities, self.applications))
+        fh.write(struct.pack(">BBB", 0, 0, 0))
         
         for i, entry in enumerate(self.entries):
             entry.write(fh)
@@ -67,6 +63,24 @@ class Index:
         
         if path != None:
             fh.close()
+    
+    def add_entry(self, entry):
+    
+        self.entries.append(entry)
+        
+        genres = map(str, [entry.genre1, entry.genre2])
+        
+        if "N/A" in genres:
+            genres.remove("N/A")
+        if "Utilities" in genres:
+            genres.remove("Utilities")
+            self.utilities += 1
+        if "Applications" in genres:
+            genres.remove("Applications")
+            self.applications += 1
+        
+        if genres:
+            self.games += 1
 
 
 class Choice:
@@ -119,7 +133,7 @@ class Genre(Choice):
         "Q": "Simulation", "R": "Space",
         "S": "Sport", "T": "Strategy",
         "U": "Word Games", "V": "Traditional Games",
-        "W": "Utilities", "Z": "Applications"
+        "W": "Utilities", "X": "Applications"
         }
     
     def __init__(self, key = None, fh = None):
@@ -427,39 +441,19 @@ if __name__ == "__main__":
     ordered = entries.keys()
     ordered.sort()
     
-    games = 0
-    utilities = 0
-    applications = 0
-    
     for pair in ordered:
         entry = entries[pair]
-        ind.entries.append(entry)
-        
-        genres = map(str, [entry.genre1, entry.genre2])
-        
-        if "N/A" in genres:
-            genres.remove("N/A")
-        if "Utilities" in genres:
-            genres.remove("Utilities")
-            utilities += 1
-        if "Applications" in genres and len(genres) == 1:
-            # Applications must be the only valid genre, otherwise the other
-            # genre takes precedence.
-            genres.remove("Applications")
-            applications += 1
-        
-        if genres:
-            games += 1
+        ind.add_entry(entry)
     
     if verbose:
         ordered = banks.items()
         ordered.sort()
         for n, name in ordered:
             print n, name
-        
-        print "Games:", games
-        print "Utilities:", utilities
-        print "Applications:", applications
+    
+    print "Games:", ind.games
+    print "Utilities:", ind.utilities
+    print "Applications:", ind.applications
     
     # Write the index to a string.
     io = StringIO()
