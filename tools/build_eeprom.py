@@ -20,6 +20,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from cStringIO import StringIO
 import os, struct, sys
 
+def plural(n, singular, plural):
+    if n == 1:
+        return singular
+    else:
+        return plural
+
 class Index:
 
     def __init__(self):
@@ -285,9 +291,10 @@ if __name__ == "__main__":
         args.remove("-s")
         split = True
     
-    if "-v" in args:
+    verbose = 0
+    while "-v" in args:
         args.remove("-v")
-        verbose = True
+        verbose += 1
     
     if split and len(args) == 6:
         choices, menu_rom_file, roms_dir = args[1:4]
@@ -351,8 +358,10 @@ if __name__ == "__main__":
             # My own format - all entries are included
             rom_sets[min(len(rom_files), 3)].append((name, publisher, rom_files, genres, rest))
         
-        elif rest[7] != "0":
-            # MGC format - only include marked entries
+        elif rest[5] != "0" and rest[6] != "0" and rest[7] != "0":
+            # MGC format - only include marked entries, working around cases
+            # where the user marked something they wanted with a "1" instead
+            # of leaving column N blank.
             number_of_roms = int(rest[6])
             if number_of_roms > 2:
                 rom_files = expand_rom_files(rom_files[0], number_of_roms)
@@ -364,11 +373,38 @@ if __name__ == "__main__":
         print "%i pairs of ROMs using %i banks." % (len(rom_sets[2]), len(rom_sets[2])*2)
         print "%i multi-ROMs using %i banks." % (len(rom_sets[3]),
             sum(map(lambda x: len(x[2]), rom_sets[3])))
+        print "Total: %i banks" % (len(rom_sets[1]) + len(rom_sets[2])*2 + len(rom_sets[3]))
+        
+        if verbose > 1:
+            if rom_sets[1]:
+                print
+                print "Single ROMs:"
+                for i, rom in enumerate(rom_sets[1]):
+                    print " ", i, rom[2]
+            
+            if rom_sets[2]:
+                print
+                print "Pairs of ROMs:"
+                i = 0
+                for rom in rom_sets[2]:
+                    print " ", i, rom[2]
+                    i += len(rom[2])
+            
+            if rom_sets[3]:
+                print
+                print "Multi-ROMs:"
+                i = 0
+                for rom in rom_sets[3]:
+                    print " ", i, rom[2]
+                    i += len(rom[2])
     
     # Assign ROM files to banks in the EEPROM.
     banks = {}
     entries = {}
     r = 1
+    
+    if verbose > 1:
+        print "Assigning pairs of ROMs..."
     
     for name, publisher, rom_files, genres, rest in rom_sets[2]:
     
@@ -387,6 +423,9 @@ if __name__ == "__main__":
     
     # Store collections of 3 or more ROMs sequentially.
     r = 1
+    
+    if verbose > 1:
+        print "Assigning multi-ROMs..."
     
     for name, publisher, rom_files, genres, rest in rom_sets[3]:
     
@@ -420,14 +459,19 @@ if __name__ == "__main__":
     # Fill the gaps in the EEPROM with single ROMs.
     r = 1
     
-    for name, publisher, rom_files, genres, rest in rom_sets[1]:
+    if verbose > 1:
+        print "Assigning single ROMs..."
+    
+    for i, (name, publisher, rom_files, genres, rest) in enumerate(rom_sets[1]):
     
         while r in banks or r == 128:
             r += 1
         
         if r >= 256:
+            remaining = len(rom_sets[1]) - i
             sys.stderr.write("Ran out of space while assigning ROM file "
-                "'%s'.\n" % rom_files[0])
+                "'%s' with %i %s left to allocate.\n" % (rom_files[0],
+                remaining, plural(remaining, "ROM", "ROMs")))
             sys.exit(1)
         
         # Create an index entry.
