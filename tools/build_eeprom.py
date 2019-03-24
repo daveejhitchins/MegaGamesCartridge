@@ -30,10 +30,9 @@ class Index:
 
     def __init__(self):
     
-        self.entries = []
-        self.games = 0
-        self.utilities = 0
-        self.applications = 0
+        self.games = []
+        self.utilities = []
+        self.applications = []
     
     def read(self, path):
     
@@ -44,11 +43,22 @@ class Index:
         totals = struct.unpack(">BBB", f.read(3))
         f.seek(3)
         
-        self.entries = []
-        while len(self.entries) < sum(totals):
+        self.games = []
+        self.utilities = []
+        self.applications = []
+        total = 0
+        
+        while total < sum(totals):
         
             entry = Entry(fh = f)
-            self.entries.append(entry)
+            
+            # Only check the first genre.
+            if entry.genre1.key == "W":
+                self.utilities.append(entry)
+            elif entry.genre1.key == "X":
+                self.applications.append(entry)
+            else:
+                self.games.append(entry)
         
         f.close()
     
@@ -59,10 +69,13 @@ class Index:
         
         fh.write("\x17\xa3")
         
-        fh.write(struct.pack(">BBB", self.games, self.utilities, self.applications))
+        fh.write(struct.pack(">BBB", len(self.games), len(self.utilities),
+                                     len(self.applications)))
         fh.write(struct.pack(">BBB", 0, 0, 0))
         
-        for i, entry in enumerate(self.entries):
+        # Write the games, utilities and applications separately. The menu
+        # expects the utilities and applications to be indexed after the games.
+        for entry in self.games + self.utilities + self.applications:
             entry.write(fh)
         
         fh.write("." * (0x4000 - fh.tell()))
@@ -72,21 +85,19 @@ class Index:
     
     def add_entry(self, entry):
     
-        self.entries.append(entry)
-        
         genres = map(str, [entry.genre1, entry.genre2])
         
         if "N/A" in genres:
             genres.remove("N/A")
+        
         if "Utilities" in genres:
             genres.remove("Utilities")
-            self.utilities += 1
-        if "Applications" in genres:
+            self.utilities.append(entry)
+        elif "Applications" in genres:
             genres.remove("Applications")
-            self.applications += 1
-        
-        if genres:
-            self.games += 1
+            self.applications.append(entry)
+        else:
+            self.games.append(entry)
 
 
 class Choice:
@@ -495,9 +506,9 @@ if __name__ == "__main__":
         for n, name in ordered:
             print n, name
     
-    print "Games:", ind.games
-    print "Utilities:", ind.utilities
-    print "Applications:", ind.applications
+    print "Games:", len(ind.games)
+    print "Utilities:", len(ind.utilities)
+    print "Applications:", len(ind.applications)
     
     # Write the index to a string.
     io = StringIO()
