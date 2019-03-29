@@ -2,10 +2,13 @@
 
 boot_code:
 
+lda #21
+ldx #0
+jsr $fff4       ; (OSBYTE 0x21,0 - flush keyboard buffer)
 lda #$8a
 ldx #0          ; (keyboard buffer)
 ldy #$89        ; (fn key 9)
-jsr $fff4       ; (OSBYTE 8a - insert character into buffer)
+jsr $fff4       ; (OSBYTE 0x8a - insert character into buffer)
 ldx #<key9_text
 ldy #>key9_text
 jsr $fff7       ; (OSCLI - KEY9 <command>|M)
